@@ -19,7 +19,6 @@ export async function signIn(credential: string, password: string) {
     }
     return response.data;
   } catch (e: any) {
-    // lempar pesan dari server jika ada
     const msg = e?.response?.data?.message || e?.message || "Login gagal";
     throw new Error(msg);
   }
@@ -39,9 +38,7 @@ export async function getToken(): Promise<string | null> {
 export async function getUserData() {
   try {
     const userData = await AsyncStorage.getItem("userData");
-    console.info("Raw user data from storage:", userData);
     const parsedData = userData ? JSON.parse(userData) : null;
-    console.info("Parsed user data:", parsedData);
     return parsedData;
   } catch (error) {
     console.log("Error getting user data:", error);
@@ -53,8 +50,6 @@ export async function getUserData() {
 export async function getUserRole(): Promise<string | null> {
   try {
     const userData = await getUserData();
-    console.info("User data for role:", userData);
-    console.info("Role user:", userData?.role);
     return userData?.role || null;
   } catch (error) {
     console.log("Error getting user role:", error);
