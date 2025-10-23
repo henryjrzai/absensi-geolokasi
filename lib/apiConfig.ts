@@ -1,0 +1,1 @@
+export const API_URL = "https://absensi-fikom.tempakodedevelopment.my.id/api";

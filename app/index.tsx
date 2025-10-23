@@ -1,91 +1,46 @@
-import {
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  View,
-} from "react-native";
-import { Button, Card, Text, TextInput } from "react-native-paper";
-import {useState} from "react";
+import { Redirect } from "expo-router";
+import { useEffect, useState } from "react";
+import { View, Text } from "react-native";
+import { checkAuthAndRole } from "@/lib/auth-context";
 
-export default function Index() {
+export default function IndexGate() {
+  const [loading, setLoading] = useState(true);
+  const [state, setState] = useState<{ isAuthenticated: boolean; role: string | null }>({
+    isAuthenticated: false,
+    role: null,
+  });
 
-  const [credential, setCredential] = useState<string>();
-  const [password, setPassword] = useState<string>();
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await checkAuthAndRole();
+        setState(res);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
-  const handleLogin = () => {}
-
-  return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
-    >
-      <View style={styles.content}>
-        <Image
-          source={require("../assets/images/logo.png")}
-          style={styles.logo}
-          resizeMode="contain"
-        />
-        <Text variant="headlineMedium" style={styles.title}>
-          Absensi Fakultas Ilmu Komputer
-        </Text>
-        <Card>
-          <Card.Content>
-            <Text variant="titleLarge" style={styles.title}>
-              Login
-            </Text>
-            <View>
-              <TextInput
-                style={styles.input}
-                label="NIDN/NPM"
-                autoCapitalize="none"
-                keyboardType="default"
-                placeholder="masukkan nidn atau npm anda"
-                mode="outlined"
-                onChangeText={setCredential}
-              />
-              <TextInput
-                style={styles.input}
-                label="Password"
-                secureTextEntry={true}
-                mode="outlined"
-                autoCapitalize="none"
-                keyboardType="default"
-                placeholder="**********"
-                onChangeText={setPassword}
-              />
-              <Button icon="login" mode="contained" onPress={handleLogin}>
-                Login
-              </Button>
-            </View>
-          </Card.Content>
-        </Card>
+  if (loading) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <Text>Loading...</Text>
       </View>
-    </KeyboardAvoidingView>
-  );
-}
+    );
+  }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    padding: 16,
-  },
-  title: {
-    marginBottom: 16,
-    textAlign: "center",
-    fontWeight: "bold",
-  },
-  input: {
-    marginBottom: 12,
-  },
-  logo: {
-    width: 100,
-    height: 100,
-    alignSelf: "center",
-    marginBottom: 24,
-  },
-});
+  if (!state.isAuthenticated) return <Redirect href="/auth" />;
+
+  switch (state.role) {
+    case "mahasiswa":
+      return <Redirect href="/(mahasiswa)" />;
+    case "dosen":
+      return <Redirect href="/(dosen)" />;
+    case "dekan":
+      return <Redirect href="/(dekan)" />;
+    case "kaprodi":
+      return <Redirect href="/(kaprodi)" />;
+    default:
+      return <Redirect href="/auth" />;
+  }
+}
