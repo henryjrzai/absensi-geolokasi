@@ -1,5 +1,7 @@
+import { Course } from "@/components/Course";
 import { HeaderDashboard } from "@/components/HeaderDashboard";
 import { getUserData, signOut } from "@/lib/auth-context";
+import { getCourseListByStudent } from "@/lib/models/matakuliah";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Entypo from "@expo/vector-icons/Entypo";
 import { router } from "expo-router";
@@ -9,6 +11,9 @@ import { Button, Card, Text, useTheme } from "react-native-paper";
 
 export default function MahasiswaIndex() {
   const [userData, setUserData] = useState<any>(null);
+  const [courseList, setCourseList] = useState<any[]>([]);
+  const [loadingCourses, setLoadingCourses] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const theme = useTheme();
 
   useEffect(() => {
@@ -17,6 +22,24 @@ export default function MahasiswaIndex() {
       setUserData(data);
     };
     loadUserData();
+
+    const loadCourses = async () => {
+      try {
+        const courses = await getCourseListByStudent();
+        if (courses.status) {
+          setCourseList(courses.data);
+          setLoadingCourses(false);
+        } else {
+          setError(courses.message || "Gagal memuat daftar mata kuliah.");
+          setLoadingCourses(false);
+        }
+      } catch (error) {
+        console.log("Error loading courses:", error);
+        setError("Gagal memuat daftar mata kuliah.");
+        setLoadingCourses(false);
+      }
+    };
+    loadCourses();
   }, []);
 
   const handleLogout = async () => {
@@ -48,37 +71,39 @@ export default function MahasiswaIndex() {
       {/* Courses */}
       <View style={{ marginVertical: 8 }}>
         <Text variant="titleSmall">📚 Matakuliah yang sedang diambil</Text>
+        {loadingCourses ? (
+          <Text>Memuat daftar mata kuliah...</Text>
+        ) : error ? (
+          <Text style={{ color: "red" }}>{error}</Text>
+        ) : courseList.length === 0 ? (
+          <Text>Tidak ada mata kuliah yang diambil.</Text>
+        ) : null}
         <View>
-          {/* List of courses can be rendered here */}
+          {courseList.slice(0, 7).map((course) => (
+            <Pressable key={course.id}>
+              <Card style={{ marginVertical: 6 }}>
+                <Card.Content>
+                  <Course
+                    id={course.id}
+                    namaKelas={course.nama_kelas}
+                    tipePertemuan={course.jadwal[0]?.tipe_pertemuan || "N/A"}
+                  />
+                </Card.Content>
+              </Card>
+            </Pressable>
+          ))}
         </View>
       </View>
       {/* End Courses */}
-
-      <Card style={styles.card}>
-        <Card.Content>
-          <Text variant="headlineMedium" style={styles.title}>
-            Dashboard Mahasiswa
-          </Text>
-
-          {userData && (
-            <View style={styles.userInfo}>
-              <Text variant="titleMedium">Nama: {userData.nama}</Text>
-              <Text variant="bodyMedium">NPM: {userData.npm}</Text>
-              <Text variant="bodyMedium">Role: {userData.role}</Text>
-              <Text variant="bodyMedium">ID: {userData.id}</Text>
-            </View>
-          )}
-
-          <Button
-            mode="contained"
-            onPress={handleLogout}
-            style={styles.logoutButton}
-            icon="logout"
-          >
-            Logout
-          </Button>
-        </Card.Content>
-      </Card>
+      
+      <Button
+        mode="contained"
+        onPress={handleLogout}
+        style={styles.logoutButton}
+        icon="logout"
+      >
+        Logout
+      </Button>
     </View>
   );
 }
