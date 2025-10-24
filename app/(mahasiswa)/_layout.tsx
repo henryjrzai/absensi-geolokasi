@@ -2,7 +2,6 @@ import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Tabs, router } from "expo-router";
-import { View } from "react-native";
 import { useTheme } from "react-native-paper";
 
 export default function MahasiswaLayout() {
@@ -72,6 +71,24 @@ export default function MahasiswaLayout() {
           tabBarIcon: ({ color }) => (
             <MaterialIcons name="person" size={24} color={color} />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="matakuliah"
+        options={{
+          headerShown: true,
+          headerTitle: "MATAKULIAH",
+          headerTitleAlign: "center",
+          headerLeft: () => (
+            <Feather
+              name="arrow-left"
+              size={24}
+              color={theme.colors.primary}
+              onPress={() => router.back()}
+              style={{ marginLeft: 16 }}
+            />
+          ),
+          href: null,
         }}
       />
     </Tabs>
