@@ -1,5 +1,8 @@
 import { Course } from "@/components/Course";
-import { getCourseListByStudent } from "@/lib/models/matakuliah";
+import {
+  getCourseListByStudent,
+  registerCourse,
+} from "@/lib/models/matakuliah";
 import { useEffect, useState } from "react";
 import {
   Pressable,
@@ -8,7 +11,17 @@ import {
   StyleSheet,
   View,
 } from "react-native";
-import { AnimatedFAB, Card, Text, useTheme } from "react-native-paper";
+import {
+  AnimatedFAB,
+  Button,
+  Card,
+  HelperText,
+  Modal,
+  Snackbar,
+  Text,
+  TextInput,
+  useTheme,
+} from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Matakuliah() {
@@ -16,7 +29,15 @@ export default function Matakuliah() {
   const [loadingCourses, setLoadingCourses] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [accessCode, setAccessCode] = useState<string>("");
+  const [snackbarVisible, setSnackbarVisible] = useState<boolean>(false);
+  const [snackbarMessage, setSnackbarMessage] = useState<string>("");
+
   const theme = useTheme();
+
+  const showModal = () => setModalVisible(true);
+  const hideModal = () => setModalVisible(false);
 
   const loadCourses = async () => {
     try {
@@ -54,6 +75,23 @@ export default function Matakuliah() {
     loadCourses();
   }, []);
 
+  const handleAddCourse = async () => {
+    const result = await registerCourse(accessCode);
+    if (result.success) {
+      hideModal();
+      setAccessCode("");
+      loadCourses();
+
+      setSnackbarMessage("Berhasil mendaftar mata kuliah!");
+      setSnackbarVisible(true);
+    } else {
+      // setError(result.message)
+      setSnackbarMessage(result.message || "Gagal mendaftar mata kuliah");
+      setSnackbarVisible(true);
+      hideModal();
+    }
+  };
+
   return (
     <SafeAreaView style={[styles.container, { paddingHorizontal: 16 }]}>
       <ScrollView
@@ -71,7 +109,7 @@ export default function Matakuliah() {
         {loadingCourses ? (
           <Text>Memuat daftar mata kuliah...</Text>
         ) : error ? (
-          <Text style={{ color: "red" }}>{error}</Text>
+          <Text style={{ color: "red", textAlign: "center" }}>{error}</Text>
         ) : courseList.length === 0 ? (
           <Text>Tidak ada mata kuliah yang diambil.</Text>
         ) : null}
@@ -94,14 +132,53 @@ export default function Matakuliah() {
       <AnimatedFAB
         icon={"plus"}
         label={"Tambah"}
-        extended={true}
-        onPress={() => console.log("Pressed")}
+        extended={isExtended}
+        onPress={showModal}
         visible={true}
         animateFrom={"right"}
         iconMode={"dynamic"}
         style={[styles.fabStyle, { backgroundColor: theme.colors.primary }]}
         color="white"
       />
+
+      {/* Modal for adding new course */}
+      <Modal
+        visible={modalVisible}
+        onDismiss={hideModal}
+        contentContainerStyle={styles.modal}
+      >
+        <Text variant="titleMedium">Masukan Kode Akses Matakuliah</Text>
+        <TextInput
+          mode="outlined"
+          label="Kode Akses"
+          placeholder="xxxxxxxxxx"
+          onChangeText={setAccessCode}
+        />
+        <HelperText
+          type="info"
+          visible={true}
+          theme={{ colors: { primary: "green" } }}
+        >
+          Kode akses dapat diperoleh dari dosen pengampu matakuliah.
+        </HelperText>
+        <Button icon="plus" mode="elevated" onPress={handleAddCourse}>
+          Tambah
+        </Button>
+      </Modal>
+      {/* Modal for adding new course */}
+
+      {/* Snackbar for messages */}
+      <Snackbar
+        visible={snackbarVisible}
+        onDismiss={() => setSnackbarVisible(false)}
+        duration={3000}
+        action={{
+          label: "Tutup",
+          onPress: () => setSnackbarVisible(false),
+        }}
+      >
+        {snackbarMessage}
+      </Snackbar>
     </SafeAreaView>
   );
 }
@@ -114,5 +191,10 @@ const styles = StyleSheet.create({
     bottom: 16,
     right: 16,
     position: "absolute",
+  },
+  modal: {
+    backgroundColor: "white",
+    marginHorizontal: 16,
+    padding: 20,
   },
 });
