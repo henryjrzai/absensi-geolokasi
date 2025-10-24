@@ -6,7 +6,13 @@ import AntDesign from "@expo/vector-icons/AntDesign";
 import Entypo from "@expo/vector-icons/Entypo";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import {
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
 import { Button, Card, Text, useTheme } from "react-native-paper";
 
 export default function MahasiswaIndex() {
@@ -14,7 +20,25 @@ export default function MahasiswaIndex() {
   const [courseList, setCourseList] = useState<any[]>([]);
   const [loadingCourses, setLoadingCourses] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
   const theme = useTheme();
+
+  const loadCourses = async () => {
+    try {
+      const courses = await getCourseListByStudent();
+      if (courses.status) {
+        setCourseList(courses.data);
+        setLoadingCourses(false);
+      } else {
+        setError(courses.message || "Gagal memuat daftar mata kuliah.");
+        setLoadingCourses(false);
+      }
+    } catch (error) {
+      console.log("Error loading courses:", error);
+      setError("Gagal memuat daftar mata kuliah.");
+      setLoadingCourses(false);
+    }
+  };
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -23,24 +47,14 @@ export default function MahasiswaIndex() {
     };
     loadUserData();
 
-    const loadCourses = async () => {
-      try {
-        const courses = await getCourseListByStudent();
-        if (courses.status) {
-          setCourseList(courses.data);
-          setLoadingCourses(false);
-        } else {
-          setError(courses.message || "Gagal memuat daftar mata kuliah.");
-          setLoadingCourses(false);
-        }
-      } catch (error) {
-        console.log("Error loading courses:", error);
-        setError("Gagal memuat daftar mata kuliah.");
-        setLoadingCourses(false);
-      }
-    };
     loadCourses();
   }, []);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadCourses();
+    setRefreshing(false);
+  };
 
   const handleLogout = async () => {
     await signOut();
@@ -70,7 +84,18 @@ export default function MahasiswaIndex() {
       {/* End Menu */}
 
       {/* Courses */}
-      <View style={{ marginVertical: 8 }}>
+      <ScrollView
+        style={{ marginVertical: 8 }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[theme.colors.primary]}
+            tintColor={theme.colors.primary}
+          />
+        }
+      >
         <Text variant="titleSmall">📚 Matakuliah yang sedang diambil</Text>
         {loadingCourses ? (
           <Text>Memuat daftar mata kuliah...</Text>
@@ -94,9 +119,9 @@ export default function MahasiswaIndex() {
             </Pressable>
           ))}
         </View>
-      </View>
+      </ScrollView>
       {/* End Courses */}
-      
+
       <Button
         mode="contained"
         onPress={handleLogout}
