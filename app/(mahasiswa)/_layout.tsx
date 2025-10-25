@@ -91,6 +91,24 @@ export default function MahasiswaLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="riwayat-absensi"
+        options={{
+          headerShown: true,
+          headerTitle: "RIWAYAT ABSENSI",
+          headerTitleAlign: "center",
+          headerLeft: () => (
+            <Feather
+              name="arrow-left"
+              size={24}
+              color={theme.colors.primary}
+              onPress={() => router.push("/matakuliah")}
+              style={{ marginLeft: 16 }}
+            />
+          ),
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

@@ -5,6 +5,8 @@ type CourseProps = {
   id: number;
   namaKelas: string;
   tipePertemuan: string;
+  jadwalId?: number;
+  onPress?: () => void;
 }
 export function Course(props : CourseProps) {
   return (

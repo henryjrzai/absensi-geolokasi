@@ -3,6 +3,7 @@ import {
   getCourseListByStudent,
   registerCourse,
 } from "@/lib/models/matakuliah";
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   Pressable,
@@ -92,6 +93,15 @@ export default function Matakuliah() {
     }
   };
 
+  const handleCoursePress = (jadwalId: number) => {
+    router.push({
+      pathname: "/riwayat-absensi",
+      params: {
+        jadwalId: jadwalId.toString(),
+      },
+    });
+  };
+
   return (
     <SafeAreaView style={[styles.container, { paddingHorizontal: 16 }]}>
       <ScrollView
@@ -115,13 +125,17 @@ export default function Matakuliah() {
         ) : null}
         <View>
           {courseList.slice(0, 7).map((course) => (
-            <Pressable key={course.id}>
+            <Pressable
+              key={course.id}
+              onPress={() => handleCoursePress(course.jadwal[0]?.id)}
+            >
               <Card style={{ marginVertical: 6 }}>
                 <Card.Content>
                   <Course
                     id={course.id}
                     namaKelas={course.nama_kelas}
                     tipePertemuan={course.jadwal[0]?.tipe_pertemuan || "N/A"}
+                    jadwalId={course.jadwal[0]?.id}
                   />
                 </Card.Content>
               </Card>
