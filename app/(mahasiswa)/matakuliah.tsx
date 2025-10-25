@@ -126,16 +126,17 @@ export default function Matakuliah() {
         <View>
           {courseList.slice(0, 7).map((course) => (
             <Pressable
-              key={course.id}
-              onPress={() => handleCoursePress(course.jadwal[0]?.id)}
+              key={course.jadwal_id}
+              onPress={() => handleCoursePress(course.jadwal_id)}
             >
               <Card style={{ marginVertical: 6 }}>
                 <Card.Content>
                   <Course
-                    id={course.id}
-                    namaKelas={course.nama_kelas}
-                    tipePertemuan={course.jadwal[0]?.tipe_pertemuan || "N/A"}
-                    jadwalId={course.jadwal[0]?.id}
+                    id={course.kelas.id}
+                    namaKelas={course.kelas.nama_kelas}
+                    tipePertemuan={course.tipe_pertemuan || "N/A"}
+                    jadwalId={course.jadwal_id}
+                    persentase={course.statistik_absensi.presentase_kehadiran}
                   />
                 </Card.Content>
               </Card>

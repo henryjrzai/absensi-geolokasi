@@ -106,13 +106,14 @@ export default function MahasiswaIndex() {
         ) : null}
         <View>
           {courseList.slice(0, 7).map((course) => (
-            <Pressable key={course.id}>
+            <Pressable key={course.jadwal_id}>
               <Card style={{ marginVertical: 6 }}>
                 <Card.Content>
                   <Course
-                    id={course.id}
-                    namaKelas={course.nama_kelas}
-                    tipePertemuan={course.jadwal[0]?.tipe_pertemuan || "N/A"}
+                    id={course.kelas.id}
+                    namaKelas={course.kelas.nama_kelas}
+                    tipePertemuan={course.tipe_pertemuan || "N/A"}
+                    persentase={course.statistik_absensi.presentase_kehadiran}
                   />
                 </Card.Content>
               </Card>
