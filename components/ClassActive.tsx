@@ -2,7 +2,6 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { Button, Card, Text, useTheme } from "react-native-paper";
 
 type CourseProps = {
-  key: number;
   classes: {
     matakuliah: {
       nama_matakuliah: string;
@@ -18,7 +17,7 @@ type CourseProps = {
 export function ClassActive(props: CourseProps) {
   const theme = useTheme();
   return (
-    <Pressable key={props.key}>
+    <Pressable>
       <Card style={{ marginVertical: 6 }}>
         <Card.Content>
           <Text variant="labelMedium" style={style.tipePertemuan}>
