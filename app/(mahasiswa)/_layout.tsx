@@ -109,6 +109,24 @@ export default function MahasiswaLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="jadwal"
+        options={{
+          headerShown: true,
+          headerTitle: "JADWAL KULIAH",
+          headerTitleAlign: "center",
+          headerLeft: () => (
+            <Feather
+              name="arrow-left"
+              size={24}
+              color={theme.colors.primary}
+              onPress={() => router.back()}
+              style={{ marginLeft: 16 }}
+            />
+          ),
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

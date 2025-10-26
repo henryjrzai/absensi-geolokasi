@@ -80,6 +80,7 @@ export default function MahasiswaIndex() {
         </Pressable>
         <Pressable
           style={[styles.menuItem, { backgroundColor: theme.colors.primary }]}
+          onPress={() => router.push("/jadwal")}
         >
           <AntDesign name="schedule" size={24} color="white" />
           <Text style={styles.menuItemText}>Jadwal Kuliah</Text>
