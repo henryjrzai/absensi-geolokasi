@@ -1,4 +1,5 @@
 import { ClassActive } from "@/components/ClassActive";
+import { submitHadirHandler } from "@/lib/models/absensi";
 import { getActiveAttendanceClasses } from "@/lib/models/kelas";
 import { useEffect, useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet } from "react-native";
@@ -25,9 +26,10 @@ export default function AbsensiAktif() {
   };
 
   // Handler functions untuk absensi
-  const handleHadir = () => {
-    console.log("Hadir dipilih");
-    // Implementasi logika hadir
+  const handleHadir = async (sesiId: string) => {
+    console.log(`Hadir dipilih untuk sesiId: ${sesiId}`);
+    const result = await submitHadirHandler(sesiId);
+    console.log("Hadir dipilih:", result);
   };
 
   const handleIzin = () => {
@@ -80,8 +82,12 @@ export default function AbsensiAktif() {
             <ClassActive
               key={index}
               classes={classItem}
-              handlerHadir={handleHadir}
+              handlerHadir={() =>
+                handleHadir(classItem.jadwal?.sesi?.id, classItem.jadwal?.id)
+              }
               handlerIzin={handleIzin}
+              kelasId={classItem.jadwal?.id}
+              sesiId={classItem.jadwal?.sesi?.id}
               handlerSakit={handleSakit}
             />
           ))}

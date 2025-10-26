@@ -10,6 +10,8 @@ type CourseProps = {
       tipe_pertemuan: string;
     };
   };
+  kelasId?: string;
+  sesiId?: string;
   handlerIzin: () => void;
   handlerHadir: () => void;
   handlerSakit: () => void;
