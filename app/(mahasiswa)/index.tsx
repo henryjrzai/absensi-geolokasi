@@ -67,7 +67,7 @@ export default function MahasiswaIndex() {
 
   return (
     <View style={styles.container}>
-      <HeaderDashboard nama={userData?.nama} id={userData?.npm} />
+      <HeaderDashboard nama={userData?.nama} id={userData?.npm} foto={userData?.foto}/>
 
       {/* Menu */}
       <View style={styles.menu}>

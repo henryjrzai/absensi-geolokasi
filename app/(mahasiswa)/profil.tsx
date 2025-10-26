@@ -1,12 +1,14 @@
-import { router } from "expo-router";
+import UpdateFotoProfilModal from "@/components/UpdateFotoProfilModal";
 import { getUserData, signOut } from "@/lib/auth-context";
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { StyleSheet, View } from "react-native";
-import { Avatar, Card, Text, Button } from "react-native-paper";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { Avatar, Button, Card, Text } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 export default function Profil() {
   const [userData, setUserData] = useState<any>(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -21,13 +23,27 @@ export default function Profil() {
     router.replace("/auth");
   };
 
+  const handleUpdateFotoSuccess = (newFotoUrl: string) => {
+    // Update userData with new photo URL
+    setUserData({ ...userData, foto: newFotoUrl });
+  };
+
+  const getAvatarSource = () => {
+    if (userData?.foto) {
+      return { uri: userData.foto };
+    }
+    return require("../../assets/images/logo.png");
+  };
+
   return (
     <SafeAreaProvider style={styles.container}>
       <View style={styles.avatarContainer}>
-        <Avatar.Image
-          size={150}
-          source={require("../../assets/images/logo.png")}
-        />
+        <TouchableOpacity onPress={() => setModalVisible(true)}>
+          <Avatar.Image size={150} source={getAvatarSource()} />
+          <View style={styles.editIconContainer}>
+            <Avatar.Icon size={40} icon="camera" style={styles.editIcon} />
+          </View>
+        </TouchableOpacity>
       </View>
       <Card>
         <Card.Content>
@@ -53,6 +69,12 @@ export default function Profil() {
       >
         Logout
       </Button>
+
+      <UpdateFotoProfilModal
+        visible={modalVisible}
+        onDismiss={() => setModalVisible(false)}
+        onSuccess={handleUpdateFotoSuccess}
+      />
     </SafeAreaProvider>
   );
 }
@@ -65,6 +87,17 @@ const styles = StyleSheet.create({
   avatarContainer: {
     alignItems: "center",
     marginBottom: 24,
+    position: "relative",
+  },
+  editIconContainer: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    backgroundColor: "white",
+    borderRadius: 20,
+  },
+  editIcon: {
+    backgroundColor: "#914c00",
   },
   user: { marginBottom: 10 },
   rowData: { flexDirection: "row", alignItems: "center", paddingVertical: 8 },

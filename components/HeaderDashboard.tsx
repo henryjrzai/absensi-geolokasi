@@ -4,9 +4,16 @@ import { Avatar, Text } from "react-native-paper";
 type HeaderDashboardProps = {
   nama: string;
   id: string;
+  foto: string;
 };
 
 export function HeaderDashboard(props: HeaderDashboardProps) {
+  const getAvatarSource = () => {
+    if (props.foto) {
+      return { uri: props.foto };
+    }
+    return require("../assets/images/logo.png");
+  };
   return (
     <View style={styles.container}>
       <View>
@@ -15,7 +22,7 @@ export function HeaderDashboard(props: HeaderDashboardProps) {
         <Text variant="bodySmall">{props.id}</Text>
       </View>
       <View>
-        <Avatar.Image size={64} source={require("../assets/images/logo.png")} />
+        <Avatar.Image size={64} source={getAvatarSource()} />
       </View>
     </View>
   );
