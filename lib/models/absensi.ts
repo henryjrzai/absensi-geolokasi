@@ -26,9 +26,52 @@ export async function submitHadirHandler(
     };
 
     const response = await api.post(`/sesi-absensi/hadir`, payload);
-    
+
     return response.data;
   } catch (error: any) {
+    throw error;
+  }
+}
+
+/**
+ * fungsional untuk melakukan pengajuan izin/sakit
+ * */
+export async function submitIzinSakitHandler(
+  kelasId: string,
+  sesiId: string,
+  status: "izin" | "sakit",
+  keterangan: string,
+  file: any
+) {
+  try {
+    const formData = new FormData();
+    formData.append("kelasId", kelasId);
+    formData.append("sesiId", sesiId);
+    formData.append("status", status);
+    formData.append("keterangan", keterangan);
+
+    // Append file
+    const fileToUpload: any = {
+      uri: file.uri,
+      type: file.type,
+      name: file.name,
+    };
+    formData.append("bukti_file", fileToUpload);
+
+    const response = await api.post(
+      `/kelas/${kelasId}/sesi-absensi/${sesiId}/pengajuan-izin-sakit`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error: any) {
+    // console.error("Error submitting izin/sakit:", error);
+    console.error("Error response:", error.response?.data);
     throw error;
   }
 }

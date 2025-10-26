@@ -43,6 +43,8 @@ Setelah aplikasi berjalan:
 
 ## Fitur yang Telah Diimplementasikan:
 
+### Absensi Hadir dengan Maps:
+
 ✅ Mendapatkan lokasi real-time perangkat (latitude & longitude)  
 ✅ Menampilkan peta OpenStreetMap dengan marker lokasi pengguna  
 ✅ Modal absensi dengan tampilan sesuai desain  
@@ -50,7 +52,14 @@ Setelah aplikasi berjalan:
 ✅ Notifikasi toast setelah absensi berhasil  
 ✅ Auto refresh data setelah absensi
 
-## Troubleshooting:
+### Pengajuan Izin/Sakit:
+
+✅ Modal pengajuan izin/sakit  
+✅ Upload file bukti (jpg, png, jpeg)  
+✅ Preview gambar sebelum submit  
+✅ Integrasi dengan endpoint API `/kelas/{kelasId}/sesi-absensi/{sesiId}/pengajuan-izin-sakit`  
+✅ Form data dengan multipart/form-data  
+✅ Notifikasi sukses/error ## Troubleshooting:
 
 ### Peta tidak muncul atau blank
 
@@ -91,13 +100,22 @@ Setelah aplikasi berjalan:
 
 ```
 components/
-  ├── AbsensiMapModal.tsx         # Modal dengan peta untuk absensi
+  ├── AbsensiMapModal.tsx              # Modal dengan peta untuk absensi hadir
+  ├── PengajuanIzinSakitModal.tsx      # Modal untuk pengajuan izin/sakit dengan upload file
 
 app/(mahasiswa)/
-  ├── absensiAktif.tsx            # Update dengan modal maps
+  ├── absensiAktif.tsx                 # Update dengan modal maps & izin/sakit
 
 lib/models/
-  ├── absensi.ts                  # Update fungsi submit dengan lat/long
+  ├── absensi.ts                       # Fungsi submit hadir & izin/sakit
 
-app.json                          # Konfigurasi maps & permissions
+app.json                               # Konfigurasi maps & permissions
 ```
+
+## Dependencies yang Digunakan:
+
+- `expo-location` - Mendapatkan lokasi GPS perangkat
+- `react-native-maps` - Menampilkan peta (OpenStreetMap)
+- `expo-image-picker` - Memilih gambar dari galeri
+- `react-native-toast-message` - Notifikasi toast
+- `axios` - HTTP client untuk API calls

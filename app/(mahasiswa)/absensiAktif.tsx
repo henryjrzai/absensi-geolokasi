@@ -1,7 +1,12 @@
 import AbsensiMapModal from "@/components/AbsensiMapModal";
 import { ClassActive } from "@/components/ClassActive";
-import { submitHadirHandler } from "@/lib/models/absensi";
+import PengajuanIzinSakitModal from "@/components/PengajuanIzinSakitModal";
+import {
+  submitHadirHandler,
+  submitIzinSakitHandler,
+} from "@/lib/models/absensi";
 import { getActiveAttendanceClasses } from "@/lib/models/kelas";
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, RefreshControl, ScrollView, StyleSheet } from "react-native";
 import { Text, useTheme } from "react-native-paper";
@@ -14,8 +19,14 @@ export default function AbsensiAktif() {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [izinSakitModalVisible, setIzinSakitModalVisible] =
+    useState<boolean>(false);
   const [selectedSesiId, setSelectedSesiId] = useState<string | null>(null);
+  const [selectedKelasId, setSelectedKelasId] = useState<string | null>(null);
   const [selectedClassName, setSelectedClassName] = useState<string>("");
+  const [selectedStatus, setSelectedStatus] = useState<"izin" | "sakit">(
+    "izin"
+  );
   const theme = useTheme();
 
   const loadActiveClasses = async () => {
@@ -74,14 +85,64 @@ export default function AbsensiAktif() {
     }
   };
 
-  const handleIzin = () => {
-    console.log("Izin dipilih");
-    // Implementasi logika izin
+  const handleIzin = (sesiId: string, kelasId: string, className: string) => {
+    console.log("Izin dipilih untuk sesiId:", sesiId, "kelasId:", kelasId);
+    setSelectedSesiId(sesiId);
+    setSelectedKelasId(kelasId);
+    setSelectedClassName(className);
+    setSelectedStatus("izin");
+    setIzinSakitModalVisible(true);
   };
 
-  const handleSakit = () => {
-    console.log("Sakit dipilih");
-    // Implementasi logika sakit
+  const handleSakit = (sesiId: string, kelasId: string, className: string) => {
+    console.log("Sakit dipilih untuk sesiId:", sesiId, "kelasId:", kelasId);
+    setSelectedSesiId(sesiId);
+    setSelectedKelasId(kelasId);
+    setSelectedClassName(className);
+    setSelectedStatus("sakit");
+    setIzinSakitModalVisible(true);
+  };
+
+  const handleSubmitIzinSakit = async (
+    file: any,
+    keterangan: string,
+    status: "izin" | "sakit"
+  ) => {
+    if (!selectedSesiId || !selectedKelasId) return;
+
+    try {
+      const result = await submitIzinSakitHandler(
+        selectedKelasId,
+        selectedSesiId,
+        status,
+        keterangan,
+        file
+      );
+      console.log("Pengajuan berhasil:", result);
+
+      setIzinSakitModalVisible(false);
+
+      Toast.show({
+        type: "success",
+        text1: "Berhasil",
+        text2: `Pengajuan ${status} berhasil dikirim`,
+      });
+
+      // Refresh data dan navigasi ke riwayat absensi
+      await loadActiveClasses();
+
+      // Navigasi ke halaman riwayat absensi setelah delay singkat
+      setTimeout(() => {
+        router.push("/(mahasiswa)/riwayat-absensi");
+      }, 1500);
+    } catch (error: any) {
+      // console.error("Error submit izin/sakit:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        `Gagal mengajukan ${status}. Silakan coba lagi.`;
+      Alert.alert("Error", errorMessage);
+    }
   };
 
   useEffect(() => {
@@ -130,10 +191,22 @@ export default function AbsensiAktif() {
                   classItem.matakuliah?.nama_matakuliah || "Kelas"
                 )
               }
-              handlerIzin={handleIzin}
+              handlerIzin={() =>
+                handleIzin(
+                  classItem.jadwal?.sesi?.id,
+                  classItem.jadwal?.id,
+                  classItem.matakuliah?.nama_matakuliah || "Kelas"
+                )
+              }
               kelasId={classItem.jadwal?.id}
               sesiId={classItem.jadwal?.sesi?.id}
-              handlerSakit={handleSakit}
+              handlerSakit={() =>
+                handleSakit(
+                  classItem.jadwal?.sesi?.id,
+                  classItem.jadwal?.id,
+                  classItem.matakuliah?.nama_matakuliah || "Kelas"
+                )
+              }
             />
           ))}
         {!loading && !error && activeClasses.length === 0 && (
@@ -148,6 +221,14 @@ export default function AbsensiAktif() {
         onDismiss={() => setModalVisible(false)}
         onSubmit={handleSubmitHadir}
         title={selectedClassName}
+      />
+
+      <PengajuanIzinSakitModal
+        visible={izinSakitModalVisible}
+        onDismiss={() => setIzinSakitModalVisible(false)}
+        onSubmit={handleSubmitIzinSakit}
+        title={selectedClassName}
+        status={selectedStatus}
       />
 
       <Toast />
