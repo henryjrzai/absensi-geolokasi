@@ -11,18 +11,24 @@ export async function getRiwayatAbsensiByJadwal(jadwalId: number) {
 }
 
 /**
-* fungsional untuk melakukan absensi hadir
-* */
-export async function submitHadirHandler(sesiId: string) {
+ * fungsional untuk melakukan absensi hadir
+ * */
+export async function submitHadirHandler(
+  sesiId: string,
+  latitude: number,
+  longitude: number
+) {
   try {
-    const response = await api.post(`/sesi-kuliah/hadir`, {
-      sesi_kuliah_id: sesiId,
-      latitude: null,
-      longitude: null,
-    });
+    const payload = {
+      sesi_kuliah_id: parseInt(sesiId),
+      latitude,
+      longitude,
+    };
+
+    const response = await api.post(`/sesi-absensi/hadir`, payload);
+    
     return response.data;
-  } catch (error) {
-    console.log(error);
+  } catch (error: any) {
     throw error;
   }
 }
