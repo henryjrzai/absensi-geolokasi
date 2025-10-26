@@ -72,7 +72,7 @@ export default function MahasiswaIndex() {
           onPress={() => router.push("/matakuliah")}
         >
           <Entypo name="book" size={24} color="white" />
-          <Text style={styles.menuItemText}>Menu Kuliah</Text>
+          <Text style={styles.menuItemText}>Matakuliah</Text>
         </Pressable>
         <Pressable
           style={[styles.menuItem, { backgroundColor: theme.colors.primary }]}
