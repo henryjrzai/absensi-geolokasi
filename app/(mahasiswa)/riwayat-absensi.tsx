@@ -162,6 +162,31 @@ export default function RiwayatAbsensi() {
                       >
                         {absen.status}
                       </Text>
+                      {absen.pengajuan_izin_sakit && (
+                        <View style={{ marginTop: 10 }}>
+                          <Text variant="titleMedium">Status Validasi:</Text>
+                          <Text>
+                            {absen.pengajuan_izin_sakit.status_validasi ===
+                            "pending"
+                              ? "⌚ Pengajuan belum divalidasi dosen"
+                              : absen.pengajuan_izin_sakit.status_validasi ===
+                                "diterima"
+                              ? "✅ Pengajuan diterima"
+                              : absen.pengajuan_izin_sakit.status_validasi ===
+                                "ditolak"
+                              ? "❌ Pengajuan ditolak"
+                              : absen.pengajuan_izin_sakit.status_validasi}
+                          </Text>
+                          {absen.pengajuan_izin_sakit.keterangan && (
+                            <View style={{ marginTop: 8 }}>
+                              <Text variant="titleMedium">Keterangan:</Text>
+                              <Text>
+                                {absen.pengajuan_izin_sakit.keterangan}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      )}
                     </Card.Content>
                   </Card>
                 ))
