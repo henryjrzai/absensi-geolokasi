@@ -1,6 +1,6 @@
 import { Course } from "@/components/Course";
 import { HeaderDashboard } from "@/components/HeaderDashboard";
-import { getUserData, signOut } from "@/lib/auth-context";
+import { getUserData } from "@/lib/auth-context";
 import { getCourseListByStudent } from "@/lib/models/matakuliah";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Entypo from "@expo/vector-icons/Entypo";
@@ -13,7 +13,7 @@ import {
   StyleSheet,
   View,
 } from "react-native";
-import { Button, Card, Text, useTheme } from "react-native-paper";
+import { Card, Text, useTheme } from "react-native-paper";
 
 export default function MahasiswaIndex() {
   const [userData, setUserData] = useState<any>(null);
@@ -56,9 +56,13 @@ export default function MahasiswaIndex() {
     setRefreshing(false);
   };
 
-  const handleLogout = async () => {
-    await signOut();
-    router.replace("/auth");
+  const handleCoursePress = (jadwalId: number) => {
+    router.push({
+      pathname: "/riwayat-absensi",
+      params: {
+        jadwalId: jadwalId.toString(),
+      },
+    });
   };
 
   return (
@@ -106,13 +110,17 @@ export default function MahasiswaIndex() {
         ) : null}
         <View>
           {courseList.slice(0, 7).map((course) => (
-            <Pressable key={course.jadwal_id}>
+            <Pressable
+              key={course.jadwal_id}
+              onPress={() => handleCoursePress(course.jadwal_id)}
+            >
               <Card style={{ marginVertical: 6 }}>
                 <Card.Content>
                   <Course
                     id={course.kelas.id}
                     namaKelas={course.kelas.nama_kelas}
                     tipePertemuan={course.tipe_pertemuan || "N/A"}
+                    jadwalId={course.jadwal_id}
                     persentase={course.statistik_absensi.presentase_kehadiran}
                   />
                 </Card.Content>
@@ -122,15 +130,6 @@ export default function MahasiswaIndex() {
         </View>
       </ScrollView>
       {/* End Courses */}
-
-      <Button
-        mode="contained"
-        onPress={handleLogout}
-        style={styles.logoutButton}
-        icon="logout"
-      >
-        Logout
-      </Button>
     </View>
   );
 }
@@ -151,9 +150,6 @@ const styles = StyleSheet.create({
   userInfo: {
     marginBottom: 24,
     gap: 8,
-  },
-  logoutButton: {
-    marginTop: 16,
   },
   menu: {
     flexDirection: "row",
