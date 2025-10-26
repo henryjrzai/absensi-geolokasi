@@ -4,7 +4,7 @@ import Feather from "@expo/vector-icons/Feather";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { Card, Text, useTheme } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -14,6 +14,7 @@ export default function RiwayatAbsensi() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [user, setUser] = useState<any>(null);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
   const theme = useTheme();
 
   const loadRiwayatAbsensi = async (jadwalId: number) => {
@@ -31,6 +32,12 @@ export default function RiwayatAbsensi() {
     }
   };
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadRiwayatAbsensi(Number(jadwalId));
+    setRefreshing(false);
+  };
+
   useEffect(() => {
     if (jadwalId) {
       loadRiwayatAbsensi(Number(jadwalId));
@@ -39,7 +46,17 @@ export default function RiwayatAbsensi() {
 
   return (
     <SafeAreaProvider style={styles.container}>
-      <ScrollView style={styles.scrollView}>
+      <ScrollView
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[theme.colors.primary]}
+            tintColor={theme.colors.primary}
+          />
+        }
+      >
         {loading ? (
           <Text style={styles.loadingText}>Loading...</Text>
         ) : error ? (
@@ -86,6 +103,8 @@ export default function RiwayatAbsensi() {
               </Card.Content>
             </Card>
 
+            {/* <Text>{jadwalId}</Text> */}
+
             <View style={styles.statistikContainer}>
               <View
                 style={[{ backgroundColor: "#23bf1dff" }, styles.statistikItem]}
@@ -126,14 +145,41 @@ export default function RiwayatAbsensi() {
             </View>
 
             <View style={{ marginTop: 20 }}>
-              {riwayatAbsensi.riwayat_absensi.map((absen: any) => (
-                <Card key={absen.id} style={{ marginBottom: 10, backgroundColor: theme.colors.tertiaryContainer }}>
+              {riwayatAbsensi.riwayat_absensi.length > 0 ? (
+                riwayatAbsensi.riwayat_absensi.map((absen: any) => (
+                  <Card
+                    key={absen.sesi_kuliah_id}
+                    style={{
+                      marginBottom: 10,
+                      backgroundColor: theme.colors.tertiaryContainer,
+                    }}
+                  >
+                    <Card.Content>
+                      <Text>{absen.tanggal}</Text>
+                      <Text
+                        variant="headlineSmall"
+                        style={{ textTransform: "capitalize" }}
+                      >
+                        {absen.status}
+                      </Text>
+                    </Card.Content>
+                  </Card>
+                ))
+              ) : (
+                <Card style={{ backgroundColor: theme.colors.surfaceVariant }}>
                   <Card.Content>
-                    <Text>{absen.tanggal}</Text>
-                    <Text variant="headlineSmall" style={{ textTransform: "capitalize" }}>{absen.status}</Text>
+                    <Text
+                      style={{
+                        textAlign: "center",
+                        color: theme.colors.onSurfaceVariant,
+                        fontStyle: "italic",
+                      }}
+                    >
+                      Data riwayat absensi tidak tersedia
+                    </Text>
                   </Card.Content>
                 </Card>
-              ))}
+              )}
             </View>
           </View>
         )}
