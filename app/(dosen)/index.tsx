@@ -4,7 +4,7 @@ import { getUserData } from "@/lib/auth-context";
 import { getCoursesByLecturer } from "@/lib/models/kelas";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet } from "react-native";
 import { Button, Card, Text, useTheme } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -42,6 +42,12 @@ export default function DosenIndex() {
     loadCourses();
   }, []);
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadCourses();
+    setRefreshing(false);
+  };
+
   return (
     <SafeAreaProvider style={styles.container}>
       <HeaderDashboard
@@ -49,7 +55,18 @@ export default function DosenIndex() {
         id={userData?.nidn}
         foto={userData?.foto}
       />
-      <ScrollView style={styles.matakuliahContainer}>
+      <ScrollView
+        style={styles.matakuliahContainer}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[theme.colors.primary]}
+            tintColor={theme.colors.primary}
+          />
+        }
+      >
         <Text variant="titleSmall">📚 Matakuliah yang di ajar</Text>
         {loading ? (
           <Text>Memuat daftar mata kuliah...</Text>

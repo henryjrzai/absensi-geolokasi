@@ -32,26 +32,6 @@ export default function DosenLayout() {
         }}
       />
       <Tabs.Screen
-        name="pengajuan"
-        options={{
-          title: "Pengajuan Izin/Sakit",
-          headerShown: true,
-          headerTitleAlign: "center",
-          headerLeft: () => (
-            <Feather
-              name="arrow-left"
-              size={24}
-              color={theme.colors.primary}
-              onPress={() => router.back()}
-              style={{ marginLeft: 16 }}
-            />
-          ),
-          tabBarIcon: ({ color }) => (
-            <FontAwesome name="hospital-o" size={24} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="kelas"
         options={{
           title: "Kelas",
