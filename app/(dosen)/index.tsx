@@ -1,10 +1,10 @@
 import ClassDosenItem from "@/components/ClassDosenItem";
 import { HeaderDashboard } from "@/components/HeaderDashboard";
-import { getUserData, signOut } from "@/lib/auth-context";
+import { getUserData } from "@/lib/auth-context";
 import { getCoursesByLecturer } from "@/lib/models/kelas";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet } from "react-native";
 import { Button, Card, Text, useTheme } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -60,7 +60,7 @@ export default function DosenIndex() {
         ) : null}
 
         {/* Render daftar mata kuliah */}
-        {courseList.map((course) => (
+        {courseList.slice(0, 8).map((course) => (
           <Pressable key={course.jadwal_id}>
             <Card style={{ marginVertical: 6 }}>
               <Card.Content>
@@ -76,9 +76,16 @@ export default function DosenIndex() {
           </Pressable>
         ))}
       </ScrollView>
-      <Button icon="alpha-i-circle" mode="contained" style={{ margin: 16 }}>
-        LIHAT DETAIL . . .
-      </Button>
+      {courseList.length > 6 && (
+        <Button
+          icon="alpha-i-circle"
+          mode="contained"
+          style={{ margin: 16 }}
+          onPress={() => router.push("/kelas")}
+        >
+          LIHAT DETAIL . . .
+        </Button>
+      )}
     </SafeAreaProvider>
   );
 }
