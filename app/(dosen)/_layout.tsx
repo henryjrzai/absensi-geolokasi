@@ -6,7 +6,7 @@ export default function DosenLayout() {
       <Stack.Screen
         name="index"
         options={{
-          headerShown: true,
+          headerShown: false,
           title: "Dashboard Dosen",
         }}
       />

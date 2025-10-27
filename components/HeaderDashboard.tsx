@@ -18,7 +18,7 @@ export function HeaderDashboard(props: HeaderDashboardProps) {
     <View style={styles.container}>
       <View>
         <Text variant="bodyLarge">👋 Selamat Datang</Text>
-        <Text variant="titleLarge" style={styles.nama}>{props.nama}</Text>
+        <Text variant="titleSmall" style={styles.nama}>{props.nama}</Text>
         <Text variant="bodySmall">{props.id}</Text>
       </View>
       <View>
