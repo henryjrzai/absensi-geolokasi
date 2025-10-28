@@ -71,6 +71,24 @@ export default function DosenLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="rekap-absensi"
+        options={{
+          headerShown: true,
+          headerTitle: "REKAP ABSENSI MATAKULIAH",
+          headerTitleAlign: "center",
+          headerLeft: () => (
+            <Feather
+              name="arrow-left"
+              size={24}
+              color={theme.colors.primary}
+              onPress={() => router.back()}
+              style={{ marginLeft: 16 }}
+            />
+          ),
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

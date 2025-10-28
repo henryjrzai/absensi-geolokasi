@@ -48,6 +48,15 @@ export default function DosenIndex() {
     setRefreshing(false);
   };
 
+  const handleCoursePress = (jadwalId: number) => {
+    router.push({
+      pathname: "/rekap-absensi",
+      params: {
+        jadwalId: jadwalId.toString(),
+      },
+    });
+  };
+
   return (
     <SafeAreaProvider style={styles.container}>
       <HeaderDashboard
@@ -78,7 +87,7 @@ export default function DosenIndex() {
 
         {/* Render daftar mata kuliah */}
         {courseList.slice(0, 8).map((course) => (
-          <Pressable key={course.jadwal_id}>
+          <Pressable key={course.jadwal_id} onPress={() => handleCoursePress(course.jadwal_id)}>
             <Card style={{ marginVertical: 6 }}>
               <Card.Content>
                 <ClassDosenItem

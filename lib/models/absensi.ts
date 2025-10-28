@@ -75,3 +75,16 @@ export async function submitIzinSakitHandler(
     throw error;
   }
 }
+
+/**
+ * fungsional untuk menampilkan sesi absensi berdasarkan jadwal dan kelas
+ * */
+export async function getSesiAbsensiByJadwalKelas(jadwalId: number) {
+  try {
+    const response = await api.get(`/absensi/kelas/${jadwalId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching sesi absensi:", error);
+    throw error;
+  }
+}
