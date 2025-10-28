@@ -89,6 +89,24 @@ export default function DosenLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="detail-absensi"
+        options={{
+          headerShown: true,
+          headerTitle: "DETAIL ABSENSI",
+          headerTitleAlign: "center",
+          headerLeft: () => (
+            <Feather
+              name="arrow-left"
+              size={24}
+              color={theme.colors.primary}
+              onPress={() => router.back()}
+              style={{ marginLeft: 16 }}
+            />
+          ),
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

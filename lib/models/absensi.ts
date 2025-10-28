@@ -88,3 +88,29 @@ export async function getSesiAbsensiByJadwalKelas(jadwalId: number) {
     throw error;
   }
 }
+
+/**
+ * fungsional untuk menampilkan detail sesi absensi berdasarkan sesi ID
+ * */
+export async function getDetailSesiAbsensi(sesiId: number) {
+  try {
+    const response = await api.get(`/absensi/sesi/${sesiId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching detail sesi absensi:", error);
+    throw error;
+  }
+}
+
+/**
+ * fungsional untuk menutup sesi absensi
+ * */
+export async function tutupSesiAbsensi(sesiId: number) {
+  try {
+    const response = await api.post(`/sesi-absensi/tutup/${sesiId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error closing sesi absensi:", error);
+    throw error;
+  }
+}

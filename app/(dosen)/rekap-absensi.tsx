@@ -1,11 +1,12 @@
 import { getSesiAbsensiByJadwalKelas } from "@/lib/models/absensi";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, RefreshControl, ScrollView } from "react-native";
 import { Card, Text, useTheme } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 export default function RekapAbsensi() {
+  const router = useRouter();
   const { jadwalId } = useLocalSearchParams();
   const [loading, setLoading] = useState<boolean>(true);
   const [rekapData, setRekapData] = useState<any>(null);
@@ -72,7 +73,15 @@ export default function RekapAbsensi() {
               <Text>Belum ada sesi kuliah.</Text>
             ) : (
               rekapData.sesi_kuliah.map((item: any, index: number) => (
-                <Pressable key={item.id}>
+                <Pressable
+                  key={item.id}
+                  onPress={() => {
+                    router.push({
+                      pathname: "/detail-absensi",
+                      params: { sesiId: item.id },
+                    });
+                  }}
+                >
                   <Card style={{ marginBottom: 12 }}>
                     <Card.Content>
                       <Text
