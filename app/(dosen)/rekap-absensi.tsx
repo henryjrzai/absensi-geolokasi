@@ -1,15 +1,17 @@
 import { getSesiAbsensiByJadwalKelas } from "@/lib/models/absensi";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView } from "react-native";
-import { Card, Text } from "react-native-paper";
+import { Pressable, RefreshControl, ScrollView } from "react-native";
+import { Card, Text, useTheme } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 export default function RekapAbsensi() {
   const { jadwalId } = useLocalSearchParams();
   const [loading, setLoading] = useState<boolean>(true);
   const [rekapData, setRekapData] = useState<any>(null);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const theme = useTheme();
 
   const loadRekapAbsensi = async (jadwalId: number) => {
     try {
@@ -32,9 +34,25 @@ export default function RekapAbsensi() {
     }
   }, [jadwalId]);
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadRekapAbsensi(Number(jadwalId));
+    setRefreshing(false);
+  };
+
   return (
     <SafeAreaProvider style={{ flex: 1, padding: 16 }}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[theme.colors.primary]}
+            tintColor={theme.colors.primary}
+          />
+        }
+      >
         {loading ? (
           <Text>Memuat rekap absensi...</Text>
         ) : error ? (
@@ -43,7 +61,6 @@ export default function RekapAbsensi() {
           <Text>Tidak ada data rekap absensi.</Text>
         ) : (
           <>
-
             {/* Daftar Sesi Kuliah */}
             <Text
               variant="titleMedium"

@@ -1,7 +1,14 @@
 import ClassDosenItem from "@/components/ClassDosenItem";
 import { getCoursesByLecturer } from "@/lib/models/kelas";
+import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import {
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
 import { Button, Card, Menu, Text, useTheme } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -58,6 +65,15 @@ export default function Kelas() {
     setRefreshing(true);
     await loadClass();
     setRefreshing(false);
+  };
+
+  const handleClassPress = (jadwalId: number) => {
+    router.push({
+      pathname: "/rekap-absensi",
+      params: {
+        jadwalId: jadwalId.toString(),
+      },
+    });
   };
 
   return (
@@ -121,7 +137,10 @@ export default function Kelas() {
           </View>
         ) : (
           filteredClassList.map((classItem) => (
-            <Pressable key={classItem.jadwal_id}>
+            <Pressable
+              key={classItem.jadwal_id}
+              onPress={() => handleClassPress(classItem.jadwal_id)}
+            >
               <Card style={{ marginVertical: 6 }}>
                 <Card.Content>
                   <ClassDosenItem
