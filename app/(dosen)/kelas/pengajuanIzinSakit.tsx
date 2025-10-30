@@ -1,12 +1,12 @@
 import { getPengajuanIzinSakitBySesi } from "@/lib/models/absensi";
+import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
-import { Badge, Button, Card, Text, useTheme } from "react-native-paper";
+import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { Button, Card, Text, useTheme } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import AntDesign from '@expo/vector-icons/AntDesign';
 
 export default function PengajuanIzinSakit() {
   const { sesiId } = useLocalSearchParams();
@@ -26,6 +26,12 @@ export default function PengajuanIzinSakit() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadData(sesiId.toString());
+    setRefreshing(false);
   };
 
   useEffect(() => {
@@ -58,7 +64,16 @@ export default function PengajuanIzinSakit() {
 
   return (
     <SafeAreaProvider style={styles.container}>
-      <ScrollView>
+      <ScrollView
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[theme.colors.primary]}
+            tintColor={theme.colors.primary}
+          />
+        }
+      >
         {data.length === 0 ? (
           <Card style={{ padding: 16, marginBottom: 16 }}>
             <Card.Content>
@@ -114,37 +129,37 @@ export default function PengajuanIzinSakit() {
                       <Feather name="x-square" size={15} color="red" />
                     )}
                   </Text>
-                    {item.status_validasi === "pending" && (
-                      <Card.Actions>
-                        <Button
-                          mode="contained"
-                          onPress={() => {
-                            // Handle accept action
-                          }}
-                          buttonColor={theme.colors.onTertiaryContainer}
-                        >
-                          <AntDesign name="file" size={20} color="white" />
-                        </Button>
-                        <Button
-                          mode="contained"
-                          onPress={() => {
-                            // Handle accept action
-                          }}
-                          buttonColor="green"
-                        >
-                          Terima
-                        </Button>
-                        <Button
-                          mode="contained"
-                          onPress={() => {
-                            // Handle reject action
-                          }}
-                          buttonColor={theme.colors.error}
-                        >
-                          Tolak
-                        </Button>
-                      </Card.Actions>
-                    )}
+                  {item.status_validasi === "pending" && (
+                    <Card.Actions>
+                      <Button
+                        mode="contained"
+                        onPress={() => {
+                          // Handle accept action
+                        }}
+                        buttonColor={theme.colors.onTertiaryContainer}
+                      >
+                        <AntDesign name="file" size={20} color="white" />
+                      </Button>
+                      <Button
+                        mode="contained"
+                        onPress={() => {
+                          // Handle accept action
+                        }}
+                        buttonColor="green"
+                      >
+                        Terima
+                      </Button>
+                      <Button
+                        mode="contained"
+                        onPress={() => {
+                          // Handle reject action
+                        }}
+                        buttonColor={theme.colors.error}
+                      >
+                        Tolak
+                      </Button>
+                    </Card.Actions>
+                  )}
                 </Card.Content>
               </Card>
             ))}
