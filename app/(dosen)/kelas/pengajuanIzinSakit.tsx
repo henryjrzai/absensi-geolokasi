@@ -4,8 +4,9 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { Button, Card, Text, useTheme } from "react-native-paper";
+import { Badge, Button, Card, Text, useTheme } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import AntDesign from '@expo/vector-icons/AntDesign';
 
 export default function PengajuanIzinSakit() {
   const { sesiId } = useLocalSearchParams();
@@ -95,14 +96,14 @@ export default function PengajuanIzinSakit() {
                     {item.mahasiswa.npm} - {item.mahasiswa.nama}
                   </Text>
                   <Text
-                    variant="bodyMedium"
+                    variant="bodyLarge"
                     style={{
                       textTransform: "capitalize",
                     }}
                   >
                     {item.status}{" "}
                     {item.status_validasi === "pending" ? (
-                      <Feather name="watch" size={15} color="yellow" />
+                      <Feather name="watch" size={15} color="green" />
                     ) : item.status_validasi === "terima" ? (
                       <FontAwesome
                         name="check-square"
@@ -112,6 +113,7 @@ export default function PengajuanIzinSakit() {
                     ) : (
                       <Feather name="x-square" size={15} color="red" />
                     )}
+                  </Text>
                     {item.status_validasi === "pending" && (
                       <Card.Actions>
                         <Button
@@ -119,6 +121,16 @@ export default function PengajuanIzinSakit() {
                           onPress={() => {
                             // Handle accept action
                           }}
+                          buttonColor={theme.colors.onTertiaryContainer}
+                        >
+                          <AntDesign name="file" size={20} color="white" />
+                        </Button>
+                        <Button
+                          mode="contained"
+                          onPress={() => {
+                            // Handle accept action
+                          }}
+                          buttonColor="green"
                         >
                           Terima
                         </Button>
@@ -127,12 +139,12 @@ export default function PengajuanIzinSakit() {
                           onPress={() => {
                             // Handle reject action
                           }}
+                          buttonColor={theme.colors.error}
                         >
                           Tolak
                         </Button>
                       </Card.Actions>
                     )}
-                  </Text>
                 </Card.Content>
               </Card>
             ))}
