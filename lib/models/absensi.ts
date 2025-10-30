@@ -114,3 +114,35 @@ export async function tutupSesiAbsensi(sesiId: number) {
     throw error;
   }
 }
+
+/**
+ * fungsional untuk mendapatkan pengajuan izin/sakit berdasarkan sesi ID
+ */
+export async function getPengajuanIzinSakitBySesi(sesiId: string) {
+  try {
+    const response = await api.get(`pengajuan-izin-sakit/sesi/${sesiId}`);
+    return response.data;
+  } catch (error: any) {
+    if (error.response) {
+      // Server merespons dengan status code di luar 2xx
+      if (error.response.status === 404) {
+        return {
+          status: false,
+          message: error.response.data?.message || "Tidak ada pengajuan izin/sakit pada sesi ini",
+          data: []
+        };
+      }
+      // Error lainnya
+      throw {
+        status: false,
+        message: error.response.data?.message || "Terjadi kesalahan",
+        statusCode: error.response.status
+      };
+    }
+    // Network error atau error lainnya
+    throw {
+      status: false,
+      message: "Gagal terhubung ke server"
+    };
+  }
+}

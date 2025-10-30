@@ -1,5 +1,5 @@
 import { getDetailSesiAbsensi, tutupSesiAbsensi } from "@/lib/models/absensi";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   Alert,
@@ -132,6 +132,13 @@ export default function DetailAbsensi() {
       ]
     );
   };
+
+  const handleLihatPengajuan = () => {
+    router.push({
+      pathname: "/pengajuanIzinSakit",
+      params: { sesiId: sesiId.toString() },
+    });
+  }
 
   if (loading) {
     return (
@@ -306,6 +313,7 @@ export default function DetailAbsensi() {
                 {detailData.absensi?.total_mahasiswa || 0} mahasiswa
               </Text>
             </View>
+            <Button mode="contained-tonal" onPress={handleLihatPengajuan}>Lihat Pengajuan Izin/Sakit</Button>
           </Card.Content>
         </Card>
       </ScrollView>

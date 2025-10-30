@@ -107,6 +107,24 @@ export default function DosenLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="pengajuanIzinSakit"
+        options={{
+          headerShown: true,
+          headerTitle: "PENGAJUAN IZIN/SAKIT",
+          headerTitleAlign: "center",
+          headerLeft: () => (
+            <Feather
+              name="arrow-left"
+              size={24}
+              color={theme.colors.primary}
+              onPress={() => router.back()}
+              style={{ marginLeft: 16 }}
+            />
+          ),
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }
