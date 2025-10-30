@@ -112,7 +112,6 @@ export default function DetailAbsensi() {
               const result = await tutupSesiAbsensi(Number(sesiId));
               if (result.status) {
                 Alert.alert("Sukses", "Sesi absensi berhasil ditutup");
-                // Reload data
                 await loadDetailAbsensi(Number(sesiId));
               } else {
                 Alert.alert(
