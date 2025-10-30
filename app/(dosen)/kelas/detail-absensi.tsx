@@ -135,15 +135,17 @@ export default function DetailAbsensi() {
 
   const handleLihatPengajuan = () => {
     router.push({
-      pathname: "/pengajuanIzinSakit",
+      pathname: "/(dosen)/kelas/pengajuanIzinSakit",
       params: { sesiId: sesiId.toString() },
     });
-  }
+  };
 
   if (loading) {
     return (
       <SafeAreaProvider style={styles.container}>
-        <Text style={{ textAlign: "center", marginTop: 20 }}>Memuat detail absensi...</Text>
+        <Text style={{ textAlign: "center", marginTop: 20 }}>
+          Memuat detail absensi...
+        </Text>
       </SafeAreaProvider>
     );
   }
@@ -313,7 +315,9 @@ export default function DetailAbsensi() {
                 {detailData.absensi?.total_mahasiswa || 0} mahasiswa
               </Text>
             </View>
-            <Button mode="contained-tonal" onPress={handleLihatPengajuan}>Lihat Pengajuan Izin/Sakit</Button>
+            <Button mode="contained-tonal" onPress={handleLihatPengajuan}>
+              Lihat Pengajuan Izin/Sakit
+            </Button>
           </Card.Content>
         </Card>
       </ScrollView>

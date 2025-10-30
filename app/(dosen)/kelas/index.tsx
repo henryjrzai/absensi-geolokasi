@@ -69,7 +69,7 @@ export default function Kelas() {
 
   const handleClassPress = (jadwalId: number) => {
     router.push({
-      pathname: "/rekap-absensi",
+      pathname: "/(dosen)/kelas/rekap-absensi",
       params: {
         jadwalId: jadwalId.toString(),
       },

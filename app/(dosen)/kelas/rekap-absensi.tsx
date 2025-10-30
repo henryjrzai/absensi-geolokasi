@@ -77,7 +77,7 @@ export default function RekapAbsensi() {
                   key={item.id}
                   onPress={() => {
                     router.push({
-                      pathname: "/detail-absensi",
+                      pathname: "/kelas/detail-absensi",
                       params: { sesiId: item.id },
                     });
                   }}

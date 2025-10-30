@@ -1,11 +1,11 @@
 import { getPengajuanIzinSakitBySesi } from "@/lib/models/absensi";
+import Feather from "@expo/vector-icons/Feather";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { Badge, Button, Card, Text, useTheme } from "react-native-paper";
+import { Button, Card, Text, useTheme } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import Feather from '@expo/vector-icons/Feather';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 export default function PengajuanIzinSakit() {
   const { sesiId } = useLocalSearchParams();
@@ -66,15 +66,7 @@ export default function PengajuanIzinSakit() {
               </Text>
             </Card.Content>
             <Card.Actions>
-              <Button
-                icon={"arrow-left-bold"}
-                onPress={() =>
-                  router.push({
-                    pathname: "/detail-absensi",
-                    params: { sesiId: sesiId.toString() },
-                  })
-                }
-              >
+              <Button icon={"arrow-left-bold"} onPress={() => router.back()}>
                 Kembali
               </Button>
             </Card.Actions>
@@ -112,16 +104,19 @@ export default function PengajuanIzinSakit() {
                     {item.status_validasi === "pending" ? (
                       <Feather name="watch" size={15} color="yellow" />
                     ) : item.status_validasi === "terima" ? (
-                      <FontAwesome name="check-square" size={15} color="green" />
+                      <FontAwesome
+                        name="check-square"
+                        size={15}
+                        color="green"
+                      />
                     ) : (
                       <Feather name="x-square" size={15} color="red" />
                     )}
-
                     {item.status_validasi === "pending" && (
                       <Card.Actions>
                         <Button
                           mode="contained"
-                          onPress={() => {  
+                          onPress={() => {
                             // Handle accept action
                           }}
                         >

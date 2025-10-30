@@ -50,7 +50,7 @@ export default function DosenIndex() {
 
   const handleCoursePress = (jadwalId: number) => {
     router.push({
-      pathname: "/rekap-absensi",
+      pathname: "/(dosen)/kelas/rekap-absensi",
       params: {
         jadwalId: jadwalId.toString(),
       },
