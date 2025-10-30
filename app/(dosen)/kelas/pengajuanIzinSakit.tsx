@@ -1,11 +1,20 @@
-import { getPengajuanIzinSakitBySesi } from "@/lib/models/absensi";
+import {
+  getPengajuanIzinSakitBySesi,
+  validatePengajuanIzinSakit,
+} from "@/lib/models/absensi";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { Image, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
-import { Button, Card, Text, useTheme, Dialog } from "react-native-paper";
+import {
+  Image,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
+import { Button, Card, Dialog, Text, useTheme } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 export default function PengajuanIzinSakit() {
@@ -43,6 +52,18 @@ export default function PengajuanIzinSakit() {
     } else {
       setPreviewImage(null);
       setPreviewVisible(true);
+    }
+  };
+
+  const handleValidasi = async (validasi: string, pengajuanId: number) => {
+    try {
+      const result = await validatePengajuanIzinSakit(validasi, pengajuanId);
+      console.log(`Validation result: `, result);
+      if (result.status) {
+        await loadData(sesiId.toString());
+      }
+    } catch (error: any) {
+      setError(error.message);
     }
   };
 
@@ -152,18 +173,14 @@ export default function PengajuanIzinSakit() {
                       </Button>
                       <Button
                         mode="contained"
-                        onPress={() => {
-                          // Handle accept action
-                        }}
+                        onPress={() => handleValidasi("terima", item.id)}
                         buttonColor="green"
                       >
                         Terima
                       </Button>
                       <Button
                         mode="contained"
-                        onPress={() => {
-                          // Handle reject action
-                        }}
+                        onPress={() => handleValidasi("tolak", item.id)}
                         buttonColor={theme.colors.error}
                       >
                         Tolak

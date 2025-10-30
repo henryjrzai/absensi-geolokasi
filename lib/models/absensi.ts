@@ -161,3 +161,23 @@ export async function bukaSesiAbsensi(jadwalId: number) {
     console.log(error);
   }
 }
+
+/**
+ * fungsi untuk melakukan validasi pengajuan izin / sakit
+ */
+export async function validatePengajuanIzinSakit(validasi: string, pengajuanId: number) {
+  console.log("Validasi:", validasi, "Pengajuan ID:", pengajuanId);
+  try {
+    const response = await api.put(`/pengajuan-izin-sakit/${pengajuanId}/validasi`, {
+      status_validasi: validasi
+    })
+    if (response.data) {
+      console.log("Pengajuan izin/sakit berhasil divalidasi");
+      return response.data;
+    } else {
+      return { status: false, message: "Gagal memvalidasi pengajuan izin/sakit" };
+    }
+  } catch (error) {
+    console.log(error);
+  }
+}
