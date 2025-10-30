@@ -3,13 +3,14 @@ import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   Alert,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { Button, Card, Chip, Text } from "react-native-paper";
+import { Button, Card, Chip, Text, useTheme } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 export default function DetailAbsensi() {
@@ -19,6 +20,8 @@ export default function DetailAbsensi() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [closingSession, setClosingSession] = useState<boolean>(false);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const theme = useTheme();
 
   const loadDetailAbsensi = async (sesiId: number) => {
     try {
@@ -40,6 +43,14 @@ export default function DetailAbsensi() {
       loadDetailAbsensi(Number(sesiId));
     }
   }, [sesiId]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    setLoading(true);
+    await loadDetailAbsensi(Number(sesiId));
+    setRefreshing(false);
+    setLoading(false);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -126,7 +137,7 @@ export default function DetailAbsensi() {
   if (loading) {
     return (
       <SafeAreaProvider style={styles.container}>
-        <Text>Memuat detail absensi...</Text>
+        <Text style={{ textAlign: "center", marginTop: 20 }}>Memuat detail absensi...</Text>
       </SafeAreaProvider>
     );
   }
@@ -149,7 +160,17 @@ export default function DetailAbsensi() {
 
   return (
     <SafeAreaProvider style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[theme.colors.primary]}
+            tintColor={theme.colors.primary}
+          />
+        }
+      >
         {/* Header Info */}
         <Card style={styles.headerCard}>
           <Card.Content>
