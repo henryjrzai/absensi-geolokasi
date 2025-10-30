@@ -146,3 +146,18 @@ export async function getPengajuanIzinSakitBySesi(sesiId: string) {
     };
   }
 }
+
+/**
+ * function untuk Membuka sesi absensi
+ */
+export async function bukaSesiAbsensi(jadwalId: number) {
+  try {
+    const response = await api.post(`/sesi-absensi/buat`, {
+      jadwal_id: jadwalId
+    });
+
+    return response.data;
+  } catch (error) {
+    console.log(error);
+  }
+}

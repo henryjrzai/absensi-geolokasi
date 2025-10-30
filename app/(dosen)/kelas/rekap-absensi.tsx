@@ -1,8 +1,23 @@
-import { getSesiAbsensiByJadwalKelas } from "@/lib/models/absensi";
+import {
+  bukaSesiAbsensi,
+  getSesiAbsensiByJadwalKelas,
+} from "@/lib/models/absensi";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Pressable, RefreshControl, ScrollView } from "react-native";
-import { Card, Text, useTheme } from "react-native-paper";
+import {
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+} from "react-native";
+import {
+  AnimatedFAB,
+  Button,
+  Card,
+  Dialog,
+  Text,
+  useTheme,
+} from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 export default function RekapAbsensi() {
@@ -12,6 +27,18 @@ export default function RekapAbsensi() {
   const [rekapData, setRekapData] = useState<any>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [isExtended, setIsExtended] = useState<boolean>(false);
+  const [visible, setVisible] = useState<boolean>(false);
+
+  const handlerDialog = () => setVisible((v) => !v);
+
+  const onScroll = ({ nativeEvent }: any) => {
+    const currentScrollPosition =
+      Math.floor(nativeEvent?.contentOffset?.y) ?? 0;
+
+    setIsExtended(currentScrollPosition <= 0);
+  };
+
   const theme = useTheme();
 
   const loadRekapAbsensi = async (jadwalId: number) => {
@@ -41,9 +68,22 @@ export default function RekapAbsensi() {
     setRefreshing(false);
   };
 
+  const handleBukaSesiAbsensi = async () => {
+    setLoading(true);
+    const result = await bukaSesiAbsensi(Number(jadwalId));
+    if (result.status) {
+      await loadRekapAbsensi(Number(jadwalId));
+      handlerDialog();
+    } else {
+      setError(result.message || "Gagal membuka sesi absensi.");
+    }
+    setLoading(false);
+  };
+
   return (
     <SafeAreaProvider style={{ flex: 1, padding: 16 }}>
       <ScrollView
+        onScroll={onScroll}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -161,6 +201,48 @@ export default function RekapAbsensi() {
           </>
         )}
       </ScrollView>
+
+      <AnimatedFAB
+        icon={"plus"}
+        label={"Tambah Sesi"}
+        extended={isExtended}
+        visible={true}
+        onPress={handlerDialog}
+        animateFrom={"right"}
+        iconMode={"static"}
+        variant={"tertiary"}
+        style={styles.fabStyle}
+      />
+
+      {/* Dialog */}
+      <Dialog visible={visible} onDismiss={handlerDialog}>
+        <Dialog.Title>Membuka Sesi Absensi</Dialog.Title>
+        <Dialog.Content>
+          <Text variant="bodyMedium">
+            Apakah Anda yakin ingin membuka sesi absensi matakuliah ini?
+          </Text>
+        </Dialog.Content>
+        <Dialog.Actions>
+          <Button
+            mode="elevated"
+            onPress={handleBukaSesiAbsensi}
+            style={{ marginRight: 8, paddingHorizontal: 8 }}
+            buttonColor={theme.colors.secondary}
+            textColor="white"
+          >
+            Buka Sesi
+          </Button>
+        </Dialog.Actions>
+      </Dialog>
     </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  fabStyle: {
+    position: "absolute",
+    right: 16,
+    bottom: 16,
+    zIndex: 10,
+  },
+});
