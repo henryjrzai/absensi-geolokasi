@@ -4,8 +4,8 @@ import Feather from "@expo/vector-icons/Feather";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
-import { Button, Card, Text, useTheme } from "react-native-paper";
+import { Image, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { Button, Card, Text, useTheme, Dialog } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 export default function PengajuanIzinSakit() {
@@ -14,6 +14,8 @@ export default function PengajuanIzinSakit() {
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const theme = useTheme();
 
   const loadData = async (sesiId: string) => {
@@ -32,6 +34,16 @@ export default function PengajuanIzinSakit() {
     setRefreshing(true);
     await loadData(sesiId.toString());
     setRefreshing(false);
+  };
+
+  const handlePreview = (filePath: string | null) => {
+    if (filePath) {
+      setPreviewImage(filePath);
+      setPreviewVisible(true);
+    } else {
+      setPreviewImage(null);
+      setPreviewVisible(true);
+    }
   };
 
   useEffect(() => {
@@ -133,9 +145,7 @@ export default function PengajuanIzinSakit() {
                     <Card.Actions>
                       <Button
                         mode="contained"
-                        onPress={() => {
-                          // Handle accept action
-                        }}
+                        onPress={() => handlePreview(item.bukti_file_path)}
                         buttonColor={theme.colors.onTertiaryContainer}
                       >
                         <AntDesign name="file" size={20} color="white" />
@@ -166,6 +176,26 @@ export default function PengajuanIzinSakit() {
           </View>
         )}
       </ScrollView>
+
+      <Dialog
+        visible={previewVisible}
+        onDismiss={() => setPreviewVisible(false)}
+      >
+        <Dialog.Title>Bukti Pendukung</Dialog.Title>
+        <Dialog.Content>
+          {previewImage ? (
+            <Image
+              source={{ uri: previewImage }}
+              style={{ width: 250, height: 350, resizeMode: "contain" }}
+            />
+          ) : (
+            <Text>Tidak ada bukti yang diunggah.</Text>
+          )}
+        </Dialog.Content>
+        <Dialog.Actions>
+          <Button onPress={() => setPreviewVisible(false)}>Tutup</Button>
+        </Dialog.Actions>
+      </Dialog>
     </SafeAreaProvider>
   );
 }
