@@ -303,12 +303,14 @@ export default function DetailAbsensi() {
                             item.absensi.status.slice(1)
                           : "Alpha"}
                       </Chip>
-                      <Button
-                        mode="text"
-                        onPress={() => handleShowEditDialog(item)}
-                      >
-                        <Feather name="edit" size={20} color="black" />
-                      </Button>
+                      {closingSession ? null : (
+                        <Button
+                          mode="text"
+                          onPress={() => handleShowEditDialog(item)}
+                        >
+                          <Feather name="edit" size={20} color="black" />
+                        </Button>
+                      )}
                     </View>
                   </View>
                 </View>
