@@ -128,21 +128,23 @@ export async function getPengajuanIzinSakitBySesi(sesiId: string) {
       if (error.response.status === 404) {
         return {
           status: false,
-          message: error.response.data?.message || "Tidak ada pengajuan izin/sakit pada sesi ini",
-          data: []
+          message:
+            error.response.data?.message ||
+            "Tidak ada pengajuan izin/sakit pada sesi ini",
+          data: [],
         };
       }
       // Error lainnya
       throw {
         status: false,
         message: error.response.data?.message || "Terjadi kesalahan",
-        statusCode: error.response.status
+        statusCode: error.response.status,
       };
     }
     // Network error atau error lainnya
     throw {
       status: false,
-      message: "Gagal terhubung ke server"
+      message: "Gagal terhubung ke server",
     };
   }
 }
@@ -153,7 +155,7 @@ export async function getPengajuanIzinSakitBySesi(sesiId: string) {
 export async function bukaSesiAbsensi(jadwalId: number) {
   try {
     const response = await api.post(`/sesi-absensi/buat`, {
-      jadwal_id: jadwalId
+      jadwal_id: jadwalId,
     });
 
     return response.data;
@@ -165,19 +167,46 @@ export async function bukaSesiAbsensi(jadwalId: number) {
 /**
  * fungsi untuk melakukan validasi pengajuan izin / sakit
  */
-export async function validatePengajuanIzinSakit(validasi: string, pengajuanId: number) {
+export async function validatePengajuanIzinSakit(
+  validasi: string,
+  pengajuanId: number
+) {
   console.log("Validasi:", validasi, "Pengajuan ID:", pengajuanId);
   try {
-    const response = await api.put(`/pengajuan-izin-sakit/${pengajuanId}/validasi`, {
-      status_validasi: validasi
-    })
+    const response = await api.put(
+      `/pengajuan-izin-sakit/${pengajuanId}/validasi`,
+      {
+        status_validasi: validasi,
+      }
+    );
     if (response.data) {
       console.log("Pengajuan izin/sakit berhasil divalidasi");
       return response.data;
     } else {
-      return { status: false, message: "Gagal memvalidasi pengajuan izin/sakit" };
+      return {
+        status: false,
+        message: "Gagal memvalidasi pengajuan izin/sakit",
+      };
     }
   } catch (error) {
     console.log(error);
   }
+}
+
+/**
+ * Fungsi untuk mengedit status absensi mahasiswa
+ */
+export async function editStatusAbsensiMahasiswa(
+  sesiId: number,
+  mahasiswaId: number,
+  status: string
+) {
+  try {
+    const response = await api.put(`/absensi/sesi/${sesiId}/mahasiswa/${mahasiswaId}`, {
+      status
+    });
+    return response.data;
+  } catch (error) {
+    console.log(error);
+  };
 }

@@ -1,5 +1,11 @@
-import { getDetailSesiAbsensi, tutupSesiAbsensi } from "@/lib/models/absensi";
+import {
+  editStatusAbsensiMahasiswa,
+  getDetailSesiAbsensi,
+  tutupSesiAbsensi,
+} from "@/lib/models/absensi";
+import Feather from "@expo/vector-icons/Feather";
 import { router, useLocalSearchParams } from "expo-router";
+import { hide } from "expo-router/build/utils/splash";
 import { useEffect, useState } from "react";
 import {
   Alert,
@@ -10,7 +16,15 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Button, Card, Chip, Text, useTheme } from "react-native-paper";
+import {
+  Button,
+  Card,
+  Chip,
+  Dialog,
+  RadioButton,
+  Text,
+  useTheme,
+} from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 export default function DetailAbsensi() {
@@ -21,7 +35,41 @@ export default function DetailAbsensi() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [closingSession, setClosingSession] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [visibleDialog, setVisibleDialog] = useState<boolean>(false);
+  const [editData, setEditData] = useState<any>(null);
+  const [selectedStatus, setSelectedStatus] = useState<string>("hadir");
+
   const theme = useTheme();
+
+  const hideDialog = () => {
+    setVisibleDialog(false);
+  };
+
+  const handleShowEditDialog = (data: any) => {
+    setEditData(data);
+    setSelectedStatus(data.absensi?.status || "alfa");
+    setVisibleDialog(true);
+  };
+
+  const handleEditStatus = async () => {
+    if (!editData && !selectedStatus) return;
+    try {
+      const result = await editStatusAbsensiMahasiswa(
+        Number(sesiId),
+        editData.mahasiswa_id,
+        selectedStatus
+      );
+      if (result.status) {
+        Alert.alert("Sukses", "Status absensi berhasil diubah");
+        await loadDetailAbsensi(Number(sesiId));
+        hideDialog();
+      } else {
+        Alert.alert("Error", result.message || "Gagal mengubah status absensi");
+      }
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Terjadi kesalahan");
+    }
+  };
 
   const loadDetailAbsensi = async (sesiId: number) => {
     try {
@@ -255,6 +303,12 @@ export default function DetailAbsensi() {
                             item.absensi.status.slice(1)
                           : "Alpha"}
                       </Chip>
+                      <Button
+                        mode="text"
+                        onPress={() => handleShowEditDialog(item)}
+                      >
+                        <Feather name="edit" size={20} color="black" />
+                      </Button>
                     </View>
                   </View>
                 </View>
@@ -321,6 +375,30 @@ export default function DetailAbsensi() {
           </Card.Content>
         </Card>
       </ScrollView>
+
+      <Dialog visible={visibleDialog} onDismiss={hideDialog}>
+        <Dialog.Title>Edit Absensi</Dialog.Title>
+        <Dialog.Content>
+          <Text>Nama : {editData?.nama}</Text>
+          <Text>NPM : {editData?.npm}</Text>
+          <View style={{ marginTop: 16 }}>
+            <Text>Pilih Status :</Text>
+            <RadioButton.Group
+              onValueChange={(newValue) => setSelectedStatus(newValue)}
+              value={selectedStatus}
+            >
+              <RadioButton.Item label="Hadir" value="hadir" />
+              <RadioButton.Item label="Izin" value="izin" />
+              <RadioButton.Item label="Sakit" value="sakit" />
+              <RadioButton.Item label="Alfa" value="alfa" />
+            </RadioButton.Group>
+          </View>
+        </Dialog.Content>
+        <Dialog.Actions>
+          <Button onPress={() => hideDialog()}>Batal</Button>
+          <Button onPress={() => handleEditStatus()}>Simpan Perubahan</Button>
+        </Dialog.Actions>
+      </Dialog>
     </SafeAreaProvider>
   );
 }
@@ -398,6 +476,7 @@ const styles = StyleSheet.create({
   statusContainer: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
   },
   statusChip: {
     alignSelf: "flex-start",
