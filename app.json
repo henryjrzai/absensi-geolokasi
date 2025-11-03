@@ -2,7 +2,7 @@
   "expo": {
     "name": "Absensi Fikom",
     "slug": "absensi-fikom",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
     "scheme": "absensifikom",

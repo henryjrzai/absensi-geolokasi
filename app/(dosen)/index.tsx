@@ -4,7 +4,12 @@ import { getUserData } from "@/lib/auth-context";
 import { getCoursesByLecturer } from "@/lib/models/kelas";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Pressable, RefreshControl, ScrollView, StyleSheet } from "react-native";
+import {
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+} from "react-native";
 import { Button, Card, Text, useTheme } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -22,6 +27,7 @@ export default function DosenIndex() {
       if (courses.status) {
         setCourseList(courses.data);
         setLoading(false);
+        setError(null);
       } else {
         setError(courses.message || "Gagal memuat daftar mata kuliah.");
         setLoading(false);
@@ -87,7 +93,10 @@ export default function DosenIndex() {
 
         {/* Render daftar mata kuliah */}
         {courseList.slice(0, 8).map((course) => (
-          <Pressable key={course.jadwal_id} onPress={() => handleCoursePress(course.jadwal_id)}>
+          <Pressable
+            key={course.jadwal_id}
+            onPress={() => handleCoursePress(course.jadwal_id)}
+          >
             <Card style={{ marginVertical: 6 }}>
               <Card.Content>
                 <ClassDosenItem
@@ -95,6 +104,7 @@ export default function DosenIndex() {
                   tipePertemuan={course.tipe_pertemuan}
                   namaKelas={course.kelas.nama_kelas}
                   ruangan={course.ruangan.nama_ruangan}
+                  kodeKelas={course.kelas.kode_kelas}
                   jam={course.jam.kode_jam}
                 />
               </Card.Content>

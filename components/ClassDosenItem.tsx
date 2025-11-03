@@ -8,6 +8,7 @@ type CourseProps = {
   jadwalId?: number;
   jam?: number;
   ruangan?: number;
+  kodeKelas?: string;
   onPress?: () => void;
 };
 export default function ClassDosenItem(props: CourseProps) {
@@ -17,7 +18,7 @@ export default function ClassDosenItem(props: CourseProps) {
         {props.tipePertemuan}
       </Text>
       <Text variant="titleMedium">{props.namaKelas}</Text>
-      <Text variant="bodyMedium">{`${props.ruangan || 0} | Jam: ${props.jam || 0}`}</Text>
+      <Text variant="bodyMedium">{`${props.ruangan || 0} | Jam: ${props.jam || 0} | Kode: ${props.kodeKelas || 0}`}</Text>
     </View>
   );
 }

@@ -148,6 +148,7 @@ export default function Kelas() {
                     tipePertemuan={classItem.tipe_pertemuan}
                     namaKelas={classItem.kelas.nama_kelas}
                     ruangan={classItem.ruangan.nama_ruangan}
+                    kodeKelas={classItem.kelas.kode_kelas}
                     jam={classItem.jam.kode_jam}
                   />
                 </Card.Content>
