@@ -51,7 +51,7 @@ export default function AbsensiMapModal({
 
       // Get current location
       const currentLocation = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
+        accuracy: Location.Accuracy.Balanced,
       });
 
       setLocation({
