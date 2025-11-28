@@ -9,16 +9,19 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
+  Alert,
 } from "react-native";
 import {
   AnimatedFAB,
   Button,
   Card,
   Dialog,
+  Portal,
   Text,
   useTheme,
 } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import * as Location from "expo-location";
 
 export default function RekapAbsensi() {
   const router = useRouter();
@@ -29,8 +32,11 @@ export default function RekapAbsensi() {
   const [error, setError] = useState<string | null>(null);
   const [isExtended, setIsExtended] = useState<boolean>(false);
   const [visible, setVisible] = useState<boolean>(false);
+  const [locationDialogVisible, setLocationDialogVisible] =
+    useState<boolean>(false);
 
   const handlerDialog = () => setVisible((v) => !v);
+  const handleLocationDialog = () => setLocationDialogVisible((v) => !v);
 
   const onScroll = ({ nativeEvent }: any) => {
     const currentScrollPosition =
@@ -43,6 +49,7 @@ export default function RekapAbsensi() {
 
   const loadRekapAbsensi = async (jadwalId: number) => {
     try {
+      setLoading(true);
       const result = await getSesiAbsensiByJadwalKelas(jadwalId);
       if (result.status) {
         setRekapData(result);
@@ -68,16 +75,55 @@ export default function RekapAbsensi() {
     setRefreshing(false);
   };
 
-  const handleBukaSesiAbsensi = async () => {
+  const handleOpenSession = () => {
+    handlerDialog();
+    handleLocationDialog();
+  };
+
+  const createSession = async (
+    location?: { latitude: number; longitude: number } | undefined
+  ) => {
     setLoading(true);
-    const result = await bukaSesiAbsensi(Number(jadwalId));
-    if (result.status) {
-      await loadRekapAbsensi(Number(jadwalId));
-      handlerDialog();
-    } else {
-      setError(result.message || "Gagal membuka sesi absensi.");
+    handleLocationDialog();
+    try {
+      const result = await bukaSesiAbsensi(Number(jadwalId), location);
+      if (result.status) {
+        await loadRekapAbsensi(Number(jadwalId));
+        Alert.alert("Sukses", "Sesi absensi berhasil dibuka.");
+      } else {
+        setError(result.message || "Gagal membuka sesi absensi.");
+        Alert.alert("Error", result.message || "Gagal membuka sesi absensi.");
+      }
+    } catch (err: any) {
+      setError(err.message || "Terjadi kesalahan.");
+      Alert.alert("Error", err.message || "Terjadi kesalahan.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  };
+
+  const handleCreateSessionWithLocation = async () => {
+    let { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        "Izin Lokasi Ditolak",
+        "Aplikasi memerlukan izin lokasi untuk melanjutkan."
+      );
+      handleLocationDialog();
+      return;
+    }
+
+    try {
+      const location = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = location.coords;
+      await createSession({ latitude, longitude });
+    } catch (error) {
+      Alert.alert(
+        "Error Lokasi",
+        "Gagal mendapatkan lokasi. Pastikan GPS Anda aktif."
+      );
+      handleLocationDialog();
+    }
   };
 
   return (
@@ -94,15 +140,20 @@ export default function RekapAbsensi() {
           />
         }
       >
-        {loading ? (
-          <Text>Memuat rekap absensi...</Text>
+        {loading && !refreshing ? (
+          <Text style={{ textAlign: "center", marginTop: 100 }}>
+            Memuat rekap absensi...
+          </Text>
         ) : error ? (
-          <Text style={{ color: "red" }}>{error}</Text>
+          <Text style={{ color: "red", textAlign: "center", marginTop: 100 }}>
+            {error}
+          </Text>
         ) : !rekapData || !rekapData.sesi_kuliah ? (
-          <Text>Tidak ada data rekap absensi.</Text>
+          <Text style={{ textAlign: "center", marginTop: 100 }}>
+            Tidak ada data rekap absensi.
+          </Text>
         ) : (
           <>
-            {/* Daftar Sesi Kuliah */}
             <Text
               variant="titleMedium"
               style={{ marginBottom: 12, fontWeight: "bold" }}
@@ -117,7 +168,7 @@ export default function RekapAbsensi() {
                   key={item.id}
                   onPress={() => {
                     router.push({
-                      pathname: "/kelas/detail-absensi",
+                      pathname: "/(dosen)/kelas/detail-absensi",
                       params: { sesiId: item.id },
                     });
                   }}
@@ -133,14 +184,12 @@ export default function RekapAbsensi() {
                       <Text variant="bodyMedium" style={{ marginTop: 4 }}>
                         {item.tanggal_formatted}
                       </Text>
-
-                      {/* Badge Status Absensi */}
                       <Card
                         style={{
                           marginTop: 8,
                           backgroundColor:
                             item.status_absensi === "buka"
-                              ? "#4CAF50"
+                              ? theme.colors.primary
                               : "#757575",
                           paddingVertical: 4,
                           paddingHorizontal: 12,
@@ -151,11 +200,9 @@ export default function RekapAbsensi() {
                           variant="bodySmall"
                           style={{ color: "white", fontWeight: "bold" }}
                         >
-                          {item.status_absensi === "buka" ? "BUKA" : "TUTUP"}
+                          {item.status_absensi.toUpperCase()}
                         </Text>
                       </Card>
-
-                      {/* Info Waktu */}
                       <Text
                         variant="bodySmall"
                         style={{ marginTop: 8, color: "#666" }}
@@ -167,8 +214,6 @@ export default function RekapAbsensi() {
                           Ditutup: {item.waktu_tutup}
                         </Text>
                       )}
-
-                      {/* Statistik Kehadiran */}
                       <Card
                         style={{ marginTop: 12, backgroundColor: "#f5f5f5" }}
                       >
@@ -214,26 +259,48 @@ export default function RekapAbsensi() {
         style={styles.fabStyle}
       />
 
-      {/* Dialog */}
-      <Dialog visible={visible} onDismiss={handlerDialog}>
-        <Dialog.Title>Membuka Sesi Absensi</Dialog.Title>
-        <Dialog.Content>
-          <Text variant="bodyMedium">
-            Apakah Anda yakin ingin membuka sesi absensi matakuliah ini?
-          </Text>
-        </Dialog.Content>
-        <Dialog.Actions>
-          <Button
-            mode="elevated"
-            onPress={handleBukaSesiAbsensi}
-            style={{ marginRight: 8, paddingHorizontal: 8 }}
-            buttonColor={theme.colors.secondary}
-            textColor="white"
-          >
-            Buka Sesi
-          </Button>
-        </Dialog.Actions>
-      </Dialog>
+      <Portal>
+        <Dialog visible={visible} onDismiss={handlerDialog}>
+          <Dialog.Title>Buka Sesi Absensi</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">
+              Anda akan membuka sesi absensi untuk matakuliah ini. Silakan
+              lanjutkan untuk memulai.
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={handlerDialog}>Batal</Button>
+            <Button
+              mode="contained"
+              onPress={handleOpenSession}
+              style={{ marginLeft: 8 }}
+            >
+              Lanjutkan
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+
+        <Dialog
+          visible={locationDialogVisible}
+          onDismiss={handleLocationDialog}
+        >
+          <Dialog.Title>Konfirmasi Lokasi Perkuliahan</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">
+              Apakah perkuliahan dilaksanakan di ruangan sesuai jadwal?
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button
+              onPress={handleCreateSessionWithLocation}
+              style={{ marginLeft: 8 }}
+            >
+              Kelas Pengganti
+            </Button>
+            <Button mode="contained" onPress={() => createSession()}>Sesuai Jadwal</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </SafeAreaProvider>
   );
 }

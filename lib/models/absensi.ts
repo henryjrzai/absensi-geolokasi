@@ -152,11 +152,24 @@ export async function getPengajuanIzinSakitBySesi(sesiId: string) {
 /**
  * function untuk Membuka sesi absensi
  */
-export async function bukaSesiAbsensi(jadwalId: number) {
+export async function bukaSesiAbsensi(
+  jadwalId: number,
+  location?: { latitude: number; longitude: number }
+) {
   try {
-    const response = await api.post(`/sesi-absensi/buat`, {
+    let payload: any = {
       jadwal_id: jadwalId,
-    });
+    };
+
+    if (location) {
+      payload = {
+        ...payload,
+        latitude: location.latitude,
+        longitude: location.longitude,
+      };
+    }
+
+    const response = await api.post(`/sesi-absensi/buat`, payload);
 
     return response.data;
   } catch (error) {
