@@ -2,8 +2,8 @@ import Feather from "@expo/vector-icons/Feather";
 import * as Location from "expo-location";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, StyleSheet, View } from "react-native";
-import MapView, { Marker } from "react-native-maps";
 import { Button, Modal, Portal, Text, useTheme } from "react-native-paper";
+import { WebView } from "react-native-webview";
 
 interface AbsensiMapModalProps {
   visible: boolean;
@@ -37,7 +37,6 @@ export default function AbsensiMapModal({
       setLoading(true);
       setErrorMsg(null);
 
-      // Request permission
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
         setErrorMsg("Permission to access location was denied");
@@ -49,7 +48,6 @@ export default function AbsensiMapModal({
         return;
       }
 
-      // Get current location
       const currentLocation = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
@@ -74,6 +72,40 @@ export default function AbsensiMapModal({
       Alert.alert("Error", "Lokasi belum tersedia");
     }
   };
+
+  const getMapHtml = (lat: number, lon: number) => `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>OpenStreetMap</title>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+      <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+      <style>
+        html, body, #map {
+          height: 100%;
+          width: 100%;
+          margin: 0;
+          padding: 0;
+          overflow: hidden;
+        }
+      </style>
+    </head>
+    <body>
+      <div id="map"></div>
+      <script>
+        var map = L.map('map').setView([${lat}, ${lon}], 16);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        var marker = L.marker([${lat}, ${lon}]).addTo(map);
+        marker.bindPopup("<b>Lokasi Anda</b><br>Anda berada di sini.").openPopup();
+      </script>
+    </body>
+    </html>
+  `;
 
   return (
     <Portal>
@@ -109,26 +141,11 @@ export default function AbsensiMapModal({
               </Button>
             </View>
           ) : location ? (
-            <MapView
+            <WebView
+              originWhitelist={["*"]}
+              source={{ html: getMapHtml(location.latitude, location.longitude) }}
               style={styles.map}
-              initialRegion={{
-                latitude: location.latitude,
-                longitude: location.longitude,
-                latitudeDelta: 0.005,
-                longitudeDelta: 0.005,
-              }}
-              showsUserLocation
-              showsMyLocationButton
-            >
-              <Marker
-                coordinate={{
-                  latitude: location.latitude,
-                  longitude: location.longitude,
-                }}
-                title="Lokasi Anda"
-                description="Anda berada di sini"
-              />
-            </MapView>
+            />
           ) : null}
         </View>
 
@@ -167,6 +184,8 @@ const styles = StyleSheet.create({
     height: 400,
     width: "100%",
     overflow: "hidden",
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
   },
   map: {
     flex: 1,
@@ -186,6 +205,8 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     padding: 20,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
   },
   buttonLabel: {
     fontSize: 16,
