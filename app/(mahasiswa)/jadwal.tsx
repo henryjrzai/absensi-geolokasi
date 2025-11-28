@@ -60,6 +60,8 @@ export default function Jadwal() {
                   tipePertemuan={item.tipe_pertemuan}
                   hari={item.hari}
                   kodeJam={item.jam.kode_jam}
+                  jamMulai={item.jam.jam_mulai}
+                  jamSelesai={item.jam.jam_selesai}
                   ruangan={item.ruangan.nama_ruangan}
                 />
               </Card.Content>
