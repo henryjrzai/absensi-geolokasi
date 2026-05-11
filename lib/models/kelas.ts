@@ -7,16 +7,23 @@ import { getUserData } from "../auth-context";
 export async function getActiveAttendanceClasses() {
   try {
     const response = await api.get(`/sesi-absensi/aktif`);
+    console.log(response.data.status);
     if (response.data.status) {
       return response.data.data;
     } else {
-      throw new Error(
-        response.data.message || "Gagal mengambil data absensi, silahkan periksa koneksi internet atau absensi tidak ada yang sedang aktif"
-      );
+      // Tidak ada sesi aktif, kembalikan array kosong
+      return [];
     }
-  } catch (error) {
+  } catch (error: any) {
+    // 404 = belum ada sesi absensi yang aktif, bukan error jaringan
+    if (error?.response?.status === 404) {
+      console.info("Tidak ada sesi absensi aktif (404)");
+      return [];
+    }
     console.info("Error fetching active attendance classes:", error);
-    throw new Error("Gagal mengambil data absensi, silahkan periksa koneksi internet atau absensi tidak ada yang sedang aktif");
+    throw new Error(
+      "Gagal mengambil data absensi, silahkan periksa koneksi internet anda"
+    );
   }
 }
 

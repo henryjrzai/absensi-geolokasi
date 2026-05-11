@@ -117,11 +117,11 @@ export default function Matakuliah() {
         }
       >
         {loadingCourses ? (
-          <Text>Memuat daftar mata kuliah...</Text>
+          <Text style={{ textAlign: "center", color: "grey", marginTop: 16, width: "100%" }}>Memuat daftar mata kuliah...</Text>
         ) : error ? (
           <Text style={{ color: "red", textAlign: "center" }}>{error}</Text>
         ) : courseList.length === 0 ? (
-          <Text>Tidak ada mata kuliah yang diambil.</Text>
+          <Text style={{ textAlign: "center", color: "grey", marginTop: 16, width: "100%" }}>Tidak ada mata kuliah yang diambil.</Text>
         ) : null}
         <View>
           {courseList.slice(0, 7).map((course) => (

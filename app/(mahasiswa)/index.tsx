@@ -103,11 +103,11 @@ export default function MahasiswaIndex() {
       >
         <Text variant="titleSmall">📚 Matakuliah yang sedang diambil</Text>
         {loadingCourses ? (
-          <Text>Memuat daftar mata kuliah...</Text>
+          <Text style={{ textAlign: "center", color: "grey", marginTop: 16 }}>Memuat daftar mata kuliah...</Text>
         ) : error ? (
-          <Text style={{ color: "red" }}>{error}</Text>
+          <Text style={{ textAlign: "center", color: "red", marginTop: 16}}>{error}</Text>
         ) : courseList.length === 0 ? (
-          <Text>Tidak ada mata kuliah yang diambil.</Text>
+          <Text style={{ textAlign: "center", color: "grey", marginTop: 16, width: "100%" }}>Tidak ada mata kuliah yang diambil.</Text>
         ) : null}
         <View>
           {courseList.slice(0, 7).map((course) => (

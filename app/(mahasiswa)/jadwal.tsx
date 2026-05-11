@@ -51,7 +51,9 @@ export default function Jadwal() {
             />
           }
         >
-          {jadwal.map((item) => (
+          {jadwal.length === 0 ? (
+            <Text style={{ textAlign: "center", color: "grey", marginTop: 16, width: "100%" }}>Tidak ada jadwal.</Text>
+          ) : jadwal.map((item) => (
             <Card style={{ marginVertical: 6 }} key={item.jadwal_id}>
               <Card.Content>
                 <JadwalItem

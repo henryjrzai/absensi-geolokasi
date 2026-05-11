@@ -1,10 +1,11 @@
 import { Redirect } from "expo-router";
 import { useEffect, useState } from "react";
-import { View, Text } from "react-native";
 import { checkAuthAndRole } from "@/lib/auth-context";
+import AppSplash from "@/components/AppSplash";
 
 export default function IndexGate() {
   const [loading, setLoading] = useState(true);
+  const MIN_SPLASH_DURATION_MS = 2500;
   const [state, setState] = useState<{ isAuthenticated: boolean; role: string | null }>({
     isAuthenticated: false,
     role: null,
@@ -12,21 +13,23 @@ export default function IndexGate() {
 
   useEffect(() => {
     (async () => {
+      const startedAt = Date.now();
       try {
         const res = await checkAuthAndRole();
         setState(res);
       } finally {
+        const elapsed = Date.now() - startedAt;
+        const remaining = Math.max(0, MIN_SPLASH_DURATION_MS - elapsed);
+        if (remaining > 0) {
+          await new Promise((resolve) => setTimeout(resolve, remaining));
+        }
         setLoading(false);
       }
     })();
   }, []);
 
   if (loading) {
-    return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-        <Text>Loading...</Text>
-      </View>
-    );
+    return <AppSplash />;
   }
 
   if (!state.isAuthenticated) return <Redirect href="/auth" />;
