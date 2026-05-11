@@ -2,16 +2,12 @@ import {
   bukaSesiAbsensi,
   getSesiAbsensiByJadwalKelas,
 } from "@/lib/models/absensi";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
+import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import {
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Alert,
-} from "react-native";
-import {
+  ActivityIndicator,
   AnimatedFAB,
   Button,
   Card,
@@ -32,27 +28,24 @@ export default function RekapAbsensi() {
   const [error, setError] = useState<string | null>(null);
   const [isExtended, setIsExtended] = useState<boolean>(false);
   const [visible, setVisible] = useState<boolean>(false);
-  const [locationDialogVisible, setLocationDialogVisible] =
-    useState<boolean>(false);
+  const [locationDialogVisible, setLocationDialogVisible] = useState<boolean>(false);
+  const theme = useTheme();
 
-  const handlerDialog = () => setVisible((v) => !v);
-  const handleLocationDialog = () => setLocationDialogVisible((v) => !v);
+  const toggleDialog = () => setVisible((v) => !v);
+  const toggleLocationDialog = () => setLocationDialogVisible((v) => !v);
 
   const onScroll = ({ nativeEvent }: any) => {
-    const currentScrollPosition =
-      Math.floor(nativeEvent?.contentOffset?.y) ?? 0;
-
+    const currentScrollPosition = Math.floor(nativeEvent?.contentOffset?.y) ?? 0;
     setIsExtended(currentScrollPosition <= 0);
   };
 
-  const theme = useTheme();
-
-  const loadRekapAbsensi = async (jadwalId: number) => {
+  const loadRekapAbsensi = async (currentJadwalId: number) => {
     try {
       setLoading(true);
-      const result = await getSesiAbsensiByJadwalKelas(jadwalId);
+      const result = await getSesiAbsensiByJadwalKelas(currentJadwalId);
       if (result.status) {
         setRekapData(result);
+        setError(null);
       } else {
         setError(result.message || "Gagal memuat rekap absensi.");
       }
@@ -76,23 +69,23 @@ export default function RekapAbsensi() {
   };
 
   const handleOpenSession = () => {
-    handlerDialog();
-    handleLocationDialog();
+    toggleDialog();
+    toggleLocationDialog();
   };
 
   const createSession = async (
     location?: { latitude: number; longitude: number } | undefined
   ) => {
     setLoading(true);
-    handleLocationDialog();
+    toggleLocationDialog();
     try {
       const result = await bukaSesiAbsensi(Number(jadwalId), location);
-      if (result.status) {
+      if (result?.status) {
         await loadRekapAbsensi(Number(jadwalId));
         Alert.alert("Sukses", "Sesi absensi berhasil dibuka.");
       } else {
-        setError(result.message || "Gagal membuka sesi absensi.");
-        Alert.alert("Error", result.message || "Gagal membuka sesi absensi.");
+        setError(result?.message || "Gagal membuka sesi absensi.");
+        Alert.alert("Error", result?.message || "Gagal membuka sesi absensi.");
       }
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan.");
@@ -103,13 +96,13 @@ export default function RekapAbsensi() {
   };
 
   const handleCreateSessionWithLocation = async () => {
-    let { status } = await Location.requestForegroundPermissionsAsync();
+    const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") {
       Alert.alert(
         "Izin Lokasi Ditolak",
         "Aplikasi memerlukan izin lokasi untuk melanjutkan."
       );
-      handleLocationDialog();
+      toggleLocationDialog();
       return;
     }
 
@@ -117,18 +110,18 @@ export default function RekapAbsensi() {
       const location = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = location.coords;
       await createSession({ latitude, longitude });
-    } catch (error) {
-      Alert.alert(
-        "Error Lokasi",
-        "Gagal mendapatkan lokasi. Pastikan GPS Anda aktif."
-      );
-      handleLocationDialog();
+    } catch {
+      Alert.alert("Error Lokasi", "Gagal mendapatkan lokasi. Pastikan GPS aktif.");
+      toggleLocationDialog();
     }
   };
 
+  const sesiList = rekapData?.sesi_kuliah || [];
+
   return (
-    <SafeAreaProvider style={{ flex: 1, padding: 16 }}>
+    <SafeAreaProvider style={styles.container}>
       <ScrollView
+        contentContainerStyle={styles.content}
         onScroll={onScroll}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -140,150 +133,143 @@ export default function RekapAbsensi() {
           />
         }
       >
-        {loading && !refreshing ? (
-          <Text style={{ textAlign: "center", marginTop: 100 }}>
-            Memuat rekap absensi...
-          </Text>
-        ) : error ? (
-          <Text style={{ color: "red", textAlign: "center", marginTop: 100 }}>
-            {error}
-          </Text>
-        ) : !rekapData || !rekapData.sesi_kuliah ? (
-          <Text style={{ textAlign: "center", marginTop: 100 }}>
-            Tidak ada data rekap absensi.
-          </Text>
-        ) : (
-          <>
+        <Card style={[styles.summaryCard, { backgroundColor: theme.colors.primaryContainer }]}>
+          <Card.Content>
             <Text
-              variant="titleMedium"
-              style={{ marginBottom: 12, fontWeight: "bold" }}
+              variant="labelLarge"
+              style={{ color: theme.colors.onPrimaryContainer, fontWeight: "700" }}
             >
-              Riwayat Sesi Absensi
+              REKAP ABSENSI KELAS
             </Text>
-            {rekapData.sesi_kuliah.length === 0 ? (
-              <Text>Belum ada sesi kuliah.</Text>
-            ) : (
-              rekapData.sesi_kuliah.map((item: any, index: number) => (
-                <Pressable
-                  key={item.id}
-                  onPress={() => {
-                    router.push({
-                      pathname: "/(dosen)/kelas/detail-absensi",
-                      params: { sesiId: item.id },
-                    });
-                  }}
-                >
-                  <Card style={{ marginBottom: 12 }}>
-                    <Card.Content>
-                      <Text
-                        variant="titleMedium"
-                        style={{ fontWeight: "bold" }}
-                      >
-                        Pertemuan {rekapData.sesi_kuliah.length - index}
-                      </Text>
-                      <Text variant="bodyMedium" style={{ marginTop: 4 }}>
-                        {item.tanggal_formatted}
-                      </Text>
-                      <Card
-                        style={{
-                          marginTop: 8,
+            <Text
+              variant="headlineSmall"
+              style={{
+                color: theme.colors.onPrimaryContainer,
+                fontWeight: "800",
+                marginTop: 6,
+              }}
+            >
+              {sesiList.length} Sesi Tercatat
+            </Text>
+            <Text
+              variant="bodyMedium"
+              style={{ color: theme.colors.onPrimaryContainer, marginTop: 8 }}
+            >
+              Pilih sesi untuk melihat detail absensi mahasiswa.
+            </Text>
+          </Card.Content>
+        </Card>
+
+        <View style={styles.sectionHeader}>
+          <Text variant="titleMedium" style={styles.sectionTitle}>
+            Riwayat Sesi Absensi
+          </Text>
+        </View>
+
+        {loading && !refreshing ? (
+          <View style={styles.stateCard}>
+            <ActivityIndicator size="small" />
+            <Text style={styles.stateText}>Memuat rekap absensi...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.stateCard}>
+            <MaterialIcons name="error-outline" size={20} color={theme.colors.error} />
+            <Text style={[styles.stateText, { color: theme.colors.error }]}>{error}</Text>
+          </View>
+        ) : sesiList.length === 0 ? (
+          <View style={styles.stateCard}>
+            <MaterialIcons name="event-busy" size={20} color="#777" />
+            <Text style={styles.stateText}>Belum ada sesi kuliah.</Text>
+          </View>
+        ) : (
+          sesiList.map((item: any, index: number) => (
+            <Pressable
+              key={item.id}
+              onPress={() => {
+                router.push({
+                  pathname: "/(dosen)/kelas/detail-absensi",
+                  params: { sesiId: item.id },
+                });
+              }}
+            >
+              <Card style={styles.sessionCard}>
+                <Card.Content>
+                  <View style={styles.cardHeader}>
+                    <Text variant="titleMedium" style={styles.cardTitle}>
+                      Pertemuan {sesiList.length - index}
+                    </Text>
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        {
                           backgroundColor:
                             item.status_absensi === "buka"
                               ? theme.colors.primary
-                              : "#757575",
-                          paddingVertical: 4,
-                          paddingHorizontal: 12,
-                          alignSelf: "flex-start",
-                        }}
-                      >
-                        <Text
-                          variant="bodySmall"
-                          style={{ color: "white", fontWeight: "bold" }}
-                        >
-                          {item.status_absensi.toUpperCase()}
-                        </Text>
-                      </Card>
-                      <Text
-                        variant="bodySmall"
-                        style={{ marginTop: 8, color: "#666" }}
-                      >
-                        Dibuka: {item.waktu_buka || "-"}
+                              : "#6B7280",
+                        },
+                      ]}
+                    >
+                      <Text style={styles.statusText}>
+                        {String(item.status_absensi || "-").toUpperCase()}
                       </Text>
-                      {item.waktu_tutup && (
-                        <Text variant="bodySmall" style={{ color: "#666" }}>
-                          Ditutup: {item.waktu_tutup}
-                        </Text>
-                      )}
-                      <Card
-                        style={{ marginTop: 12, backgroundColor: "#f5f5f5" }}
-                      >
-                        <Card.Content>
-                          <Text
-                            variant="bodyMedium"
-                            style={{ fontWeight: "bold" }}
-                          >
-                            Kehadiran
-                          </Text>
-                          <Text variant="bodySmall">
-                            ✅ Hadir: {item.jumlah_hadir}
-                          </Text>
-                          <Text variant="bodySmall">
-                            📝 Izin: {item.jumlah_izin}
-                          </Text>
-                          <Text variant="bodySmall">
-                            🏥 Sakit: {item.jumlah_sakit}
-                          </Text>
-                          <Text variant="bodySmall">
-                            ❌ Alfa: {item.jumlah_alfa}
-                          </Text>
-                        </Card.Content>
-                      </Card>
-                    </Card.Content>
-                  </Card>
-                </Pressable>
-              ))
-            )}
-          </>
+                    </View>
+                  </View>
+
+                  <Text variant="bodyMedium" style={styles.dateText}>
+                    {item.tanggal_formatted}
+                  </Text>
+
+                  <View style={styles.timeRow}>
+                    <Text variant="bodySmall" style={styles.timeText}>
+                      Dibuka: {item.waktu_buka || "-"}
+                    </Text>
+                    <Text variant="bodySmall" style={styles.timeText}>
+                      Ditutup: {item.waktu_tutup || "-"}
+                    </Text>
+                  </View>
+
+                  {/* <View style={styles.statRow}>
+                    <Text style={styles.statItem}>Hadir: {item.jumlah_hadir}</Text>
+                    <Text style={styles.statItem}>Izin: {item.jumlah_izin}</Text>
+                    <Text style={styles.statItem}>Sakit: {item.jumlah_sakit}</Text>
+                    <Text style={styles.statItem}>Alfa: {item.jumlah_alfa}</Text>
+                  </View> */}
+                </Card.Content>
+              </Card>
+            </Pressable>
+          ))
         )}
       </ScrollView>
 
       <AnimatedFAB
-        icon={"plus"}
-        label={"Tambah Sesi"}
+        icon="plus"
+        label="Tambah Sesi"
         extended={isExtended}
-        visible={true}
-        onPress={handlerDialog}
-        animateFrom={"right"}
-        iconMode={"static"}
-        variant={"tertiary"}
+        visible
+        onPress={toggleDialog}
+        animateFrom="right"
+        iconMode="static"
+        variant="tertiary"
         style={styles.fabStyle}
       />
 
       <Portal>
-        <Dialog visible={visible} onDismiss={handlerDialog}>
+        <Dialog visible={visible} onDismiss={toggleDialog}>
           <Dialog.Title>Buka Sesi Absensi</Dialog.Title>
           <Dialog.Content>
             <Text variant="bodyMedium">
-              Anda akan membuka sesi absensi untuk matakuliah ini. Silakan
-              lanjutkan untuk memulai.
+              Anda akan membuka sesi absensi untuk mata kuliah ini.
             </Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={handlerDialog}>Batal</Button>
-            <Button
-              mode="contained"
-              onPress={handleOpenSession}
-              style={{ marginLeft: 8 }}
-            >
+            <Button onPress={toggleDialog}>Batal</Button>
+            <Button mode="contained" onPress={handleOpenSession} style={{ marginLeft: 8 }}>
               Lanjutkan
             </Button>
           </Dialog.Actions>
         </Dialog>
 
-        <Dialog
-          visible={locationDialogVisible}
-          onDismiss={handleLocationDialog}
-        >
+        <Dialog visible={locationDialogVisible} onDismiss={toggleLocationDialog}>
           <Dialog.Title>Konfirmasi Lokasi Perkuliahan</Dialog.Title>
           <Dialog.Content>
             <Text variant="bodyMedium">
@@ -291,13 +277,10 @@ export default function RekapAbsensi() {
             </Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button
-              onPress={handleCreateSessionWithLocation}
-              style={{ marginLeft: 8 }}
-            >
-              Kelas Pengganti
+            <Button onPress={handleCreateSessionWithLocation}>Kelas Pengganti</Button>
+            <Button mode="contained" onPress={() => createSession()}>
+              Sesuai Jadwal
             </Button>
-            <Button mode="contained" onPress={() => createSession()}>Sesuai Jadwal</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
@@ -306,6 +289,89 @@ export default function RekapAbsensi() {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#F6F8FC",
+  },
+  content: {
+    padding: 16,
+    paddingBottom: 90,
+  },
+  summaryCard: {
+    borderRadius: 16,
+    marginBottom: 14,
+  },
+  sectionHeader: {
+    marginBottom: 10,
+  },
+  sectionTitle: {
+    fontWeight: "700",
+  },
+  stateCard: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 14,
+    marginVertical: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  stateText: {
+    fontSize: 14,
+    color: "#444",
+  },
+  sessionCard: {
+    marginBottom: 10,
+    borderRadius: 12,
+    backgroundColor: "white",
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 8,
+  },
+  cardTitle: {
+    fontWeight: "700",
+  },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  statusText: {
+    color: "white",
+    fontWeight: "700",
+    fontSize: 12,
+  },
+  dateText: {
+    marginTop: 6,
+    color: "#4B5563",
+  },
+  timeRow: {
+    marginTop: 10,
+    gap: 2,
+  },
+  timeText: {
+    color: "#6B7280",
+  },
+  statRow: {
+    marginTop: 12,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    rowGap: 6,
+    columnGap: 10,
+  },
+  statItem: {
+    backgroundColor: "#F3F4F6",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    color: "#374151",
+    fontSize: 12,
+    fontWeight: "600",
+  },
   fabStyle: {
     position: "absolute",
     right: 16,

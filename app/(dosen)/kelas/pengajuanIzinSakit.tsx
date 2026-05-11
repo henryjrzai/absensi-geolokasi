@@ -2,19 +2,20 @@ import {
   getPengajuanIzinSakitBySesi,
   validatePengajuanIzinSakit,
 } from "@/lib/models/absensi";
-import AntDesign from "@expo/vector-icons/AntDesign";
-import Feather from "@expo/vector-icons/Feather";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Image, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import {
-  Image,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  View,
-} from "react-native";
-import { Button, Card, Dialog, Text, useTheme } from "react-native-paper";
+  ActivityIndicator,
+  Button,
+  Card,
+  Chip,
+  Dialog,
+  Portal,
+  Text,
+  useTheme,
+} from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 export default function PengajuanIzinSakit() {
@@ -23,17 +24,24 @@ export default function PengajuanIzinSakit() {
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewVisible, setPreviewVisible] = useState<boolean>(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [validatingId, setValidatingId] = useState<number | null>(null);
   const theme = useTheme();
 
-  const loadData = async (sesiId: string) => {
+  const pengajuanList = useMemo(() => {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    return data.pengajuan || [];
+  }, [data]);
+
+  const loadData = async (currentSesiId: string) => {
     try {
-      const result = await getPengajuanIzinSakitBySesi(sesiId.toString());
-      console.log(`Fetched pengajuan izin/sakit data: `, result.data);
-      setData(result.data);
-    } catch (error: any) {
-      setError(error.message);
+      const result = await getPengajuanIzinSakitBySesi(currentSesiId);
+      setData(result?.data ?? []);
+      setError(null);
+    } catch (err: any) {
+      setError(err.message || "Gagal memuat pengajuan izin/sakit.");
     } finally {
       setLoading(false);
     }
@@ -41,63 +49,80 @@ export default function PengajuanIzinSakit() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadData(sesiId.toString());
+    await loadData(String(sesiId));
     setRefreshing(false);
   };
 
   const handlePreview = (filePath: string | null) => {
-    if (filePath) {
-      setPreviewImage(filePath);
-      setPreviewVisible(true);
-    } else {
-      setPreviewImage(null);
-      setPreviewVisible(true);
-    }
+    setPreviewImage(filePath || null);
+    setPreviewVisible(true);
   };
 
   const handleValidasi = async (validasi: string, pengajuanId: number) => {
     try {
+      setValidatingId(pengajuanId);
       const result = await validatePengajuanIzinSakit(validasi, pengajuanId);
-      console.log(`Validation result: `, result);
-      if (result.status) {
-        await loadData(sesiId.toString());
+      if (result?.status) {
+        await loadData(String(sesiId));
+      } else {
+        setError(result?.message || "Gagal melakukan validasi.");
       }
-    } catch (error: any) {
-      setError(error.message);
+    } catch (err: any) {
+      setError(err.message || "Gagal melakukan validasi.");
+    } finally {
+      setValidatingId(null);
     }
   };
 
   useEffect(() => {
-    loadData(sesiId.toString());
+    loadData(String(sesiId));
   }, [sesiId]);
 
-  if (loading) {
-    return (
-      <SafeAreaProvider
-        style={[
-          styles.container,
-          { justifyContent: "center", alignItems: "center" },
-        ]}
-      >
-        <Text>Loading...</Text>
-      </SafeAreaProvider>
-    );
-  } else if (error) {
-    return (
-      <SafeAreaProvider
-        style={[
-          styles.container,
-          { justifyContent: "center", alignItems: "center" },
-        ]}
-      >
-        <Text>Error: {error}</Text>
-      </SafeAreaProvider>
-    );
-  }
+  const getStatusColor = (status?: string) => {
+    switch ((status || "").toLowerCase()) {
+      case "izin":
+        return "#CA8A04";
+      case "sakit":
+        return "#0284C7";
+      default:
+        return "#6B7280";
+    }
+  };
+
+  const getValidationLabel = (status?: string) => {
+    switch ((status || "").toLowerCase()) {
+      case "pending":
+        return "Menunggu";
+      case "terima":
+      case "diterima":
+        return "Diterima";
+      case "tolak":
+      case "ditolak":
+        return "Ditolak";
+      default:
+        return status || "-";
+    }
+  };
+
+  const getValidationColor = (status?: string) => {
+    switch ((status || "").toLowerCase()) {
+      case "pending":
+        return "#6B7280";
+      case "terima":
+      case "diterima":
+        return "#16A34A";
+      case "tolak":
+      case "ditolak":
+        return "#DC2626";
+      default:
+        return "#6B7280";
+    }
+  };
 
   return (
     <SafeAreaProvider style={styles.container}>
       <ScrollView
+        contentContainerStyle={styles.content}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -107,112 +132,146 @@ export default function PengajuanIzinSakit() {
           />
         }
       >
-        {data.length === 0 ? (
-          <Card style={{ padding: 16, marginBottom: 16 }}>
+        <Card
+          style={[
+            styles.summaryCard,
+            { backgroundColor: theme.colors.primaryContainer },
+          ]}
+        >
+          <Card.Content>
+            <Text
+              variant="labelLarge"
+              style={{ color: theme.colors.onPrimaryContainer, fontWeight: "700" }}
+            >
+              PENGAJUAN IZIN & SAKIT
+            </Text>
+            <Text
+              variant="headlineSmall"
+              style={{
+                color: theme.colors.onPrimaryContainer,
+                fontWeight: "800",
+                marginTop: 6,
+              }}
+            >
+              {pengajuanList.length} Pengajuan
+            </Text>
+            <Text
+              variant="bodyMedium"
+              style={{ color: theme.colors.onPrimaryContainer, marginTop: 8 }}
+            >
+              Tinjau bukti dan validasi pengajuan mahasiswa pada sesi ini.
+            </Text>
+          </Card.Content>
+        </Card>
+
+        {loading ? (
+          <View style={styles.stateCard}>
+            <ActivityIndicator size="small" />
+            <Text style={styles.stateText}>Memuat data pengajuan...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.stateCard}>
+            <MaterialIcons name="error-outline" size={20} color={theme.colors.error} />
+            <Text style={[styles.stateText, { color: theme.colors.error }]}>{error}</Text>
+          </View>
+        ) : pengajuanList.length === 0 ? (
+          <Card style={styles.emptyCard}>
             <Card.Content>
-              <Text style={{ fontStyle: "italic", textAlign: "center" }}>
-                Tidak ada pengajuan izin/sakit untuk sesi kuliah ini
+              <Text style={styles.emptyText}>
+                Tidak ada pengajuan izin/sakit untuk sesi kuliah ini.
               </Text>
             </Card.Content>
             <Card.Actions>
-              <Button icon={"arrow-left-bold"} onPress={() => router.back()}>
+              <Button icon="arrow-left" onPress={() => router.back()}>
                 Kembali
               </Button>
             </Card.Actions>
           </Card>
         ) : (
-          <View>
-            {/* Header Info */}
-            <Card
-              style={[
-                styles.headerCard,
-                { backgroundColor: theme.colors.tertiary },
-              ]}
-            >
+          pengajuanList.map((item: any) => (
+            <Card key={item.id} style={styles.itemCard}>
               <Card.Content>
-                <Text variant="headlineSmall" style={styles.title}>
-                  Absensi {data.sesi_kuliah.tanggal}
+                <Text variant="titleMedium" style={styles.studentName}>
+                  {item.mahasiswa?.npm} - {item.mahasiswa?.nama}
                 </Text>
-              </Card.Content>
-            </Card>
 
-            {/* List of Pengajuan Izin/Sakit */}
-            {data.pengajuan.map((item: any) => (
-              <Card key={item.id} style={{ marginBottom: 16 }}>
-                <Card.Content>
-                  <Text variant="titleMedium">
-                    {item.mahasiswa.npm} - {item.mahasiswa.nama}
-                  </Text>
-                  <Text
-                    variant="bodyLarge"
-                    style={{
-                      textTransform: "capitalize",
-                    }}
+                <View style={styles.badgeRow}>
+                  <Chip
+                    style={[styles.badge, { backgroundColor: getStatusColor(item.status) }]}
+                    textStyle={styles.badgeText}
                   >
-                    {item.status}{" "}
-                    {item.status_validasi === "pending" ? (
-                      <Feather name="watch" size={15} color="green" />
-                    ) : item.status_validasi === "terima" ? (
-                      <FontAwesome
-                        name="check-square"
-                        size={15}
-                        color="green"
-                      />
-                    ) : (
-                      <Feather name="x-square" size={15} color="red" />
-                    )}
+                    {(item.status || "-").toUpperCase()}
+                  </Chip>
+                  <Chip
+                    style={[
+                      styles.badge,
+                      { backgroundColor: getValidationColor(item.status_validasi) },
+                    ]}
+                    textStyle={styles.badgeText}
+                  >
+                    {getValidationLabel(item.status_validasi)}
+                  </Chip>
+                </View>
+
+                {item.keterangan ? (
+                  <Text variant="bodySmall" style={styles.noteText}>
+                    {item.keterangan}
                   </Text>
+                ) : null}
+
+                <View style={styles.actionsRow}>
+                  <Button
+                    mode="outlined"
+                    icon="file-eye"
+                    onPress={() => handlePreview(item.bukti_file_path)}
+                  >
+                    Lihat Bukti
+                  </Button>
+
                   {item.status_validasi === "pending" && (
-                    <Card.Actions>
+                    <>
                       <Button
                         mode="contained"
-                        onPress={() => handlePreview(item.bukti_file_path)}
-                        buttonColor={theme.colors.onTertiaryContainer}
-                      >
-                        <AntDesign name="file" size={20} color="white" />
-                      </Button>
-                      <Button
-                        mode="contained"
+                        buttonColor="#16A34A"
                         onPress={() => handleValidasi("terima", item.id)}
-                        buttonColor="green"
+                        loading={validatingId === item.id}
+                        disabled={validatingId === item.id}
                       >
                         Terima
                       </Button>
                       <Button
                         mode="contained"
-                        onPress={() => handleValidasi("tolak", item.id)}
                         buttonColor={theme.colors.error}
+                        onPress={() => handleValidasi("tolak", item.id)}
+                        loading={validatingId === item.id}
+                        disabled={validatingId === item.id}
                       >
                         Tolak
                       </Button>
-                    </Card.Actions>
+                    </>
                   )}
-                </Card.Content>
-              </Card>
-            ))}
-          </View>
+                </View>
+              </Card.Content>
+            </Card>
+          ))
         )}
       </ScrollView>
 
-      <Dialog
-        visible={previewVisible}
-        onDismiss={() => setPreviewVisible(false)}
-      >
-        <Dialog.Title>Bukti Pendukung</Dialog.Title>
-        <Dialog.Content>
-          {previewImage ? (
-            <Image
-              source={{ uri: previewImage }}
-              style={{ width: 250, height: 350, resizeMode: "contain" }}
-            />
-          ) : (
-            <Text>Tidak ada bukti yang diunggah.</Text>
-          )}
-        </Dialog.Content>
-        <Dialog.Actions>
-          <Button onPress={() => setPreviewVisible(false)}>Tutup</Button>
-        </Dialog.Actions>
-      </Dialog>
+      <Portal>
+        <Dialog visible={previewVisible} onDismiss={() => setPreviewVisible(false)}>
+          <Dialog.Title>Bukti Pendukung</Dialog.Title>
+          <Dialog.Content>
+            {previewImage ? (
+              <Image source={{ uri: previewImage }} style={styles.previewImage} />
+            ) : (
+              <Text>Tidak ada bukti yang diunggah.</Text>
+            )}
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setPreviewVisible(false)}>Tutup</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </SafeAreaProvider>
   );
 }
@@ -220,14 +279,75 @@ export default function PengajuanIzinSakit() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#F6F8FC",
+  },
+  content: {
     padding: 16,
+    paddingBottom: 20,
   },
-  headerCard: {
-    marginBottom: 16,
+  summaryCard: {
+    borderRadius: 16,
+    marginBottom: 14,
   },
-  title: {
-    fontWeight: "bold",
+  stateCard: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 14,
+    marginVertical: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  stateText: {
+    fontSize: 14,
+    color: "#444",
+  },
+  emptyCard: {
+    borderRadius: 12,
+    backgroundColor: "white",
+  },
+  emptyText: {
     textAlign: "center",
+    color: "#666",
+    fontStyle: "italic",
+  },
+  itemCard: {
+    borderRadius: 12,
+    marginBottom: 10,
+    backgroundColor: "white",
+  },
+  studentName: {
+    fontWeight: "700",
+  },
+  badgeRow: {
+    marginTop: 8,
+    flexDirection: "row",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  badge: {
+    height: 30,
+  },
+  badgeText: {
     color: "white",
+    fontWeight: "700",
+    fontSize: 11,
+  },
+  noteText: {
+    marginTop: 10,
+    color: "#4B5563",
+  },
+  actionsRow: {
+    marginTop: 12,
+    flexDirection: "row",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  previewImage: {
+    width: 260,
+    height: 360,
+    resizeMode: "contain",
+    alignSelf: "center",
   },
 });

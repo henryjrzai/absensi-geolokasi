@@ -4,6 +4,7 @@ import { getUserData } from "@/lib/auth-context";
 import { getCourseListByStudent } from "@/lib/models/matakuliah";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Entypo from "@expo/vector-icons/Entypo";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -13,7 +14,7 @@ import {
   StyleSheet,
   View,
 } from "react-native";
-import { Card, Text, useTheme } from "react-native-paper";
+import { ActivityIndicator, Card, Text, useTheme } from "react-native-paper";
 
 export default function MahasiswaIndex() {
   const [userData, setUserData] = useState<any>(null);
@@ -28,14 +29,14 @@ export default function MahasiswaIndex() {
       const courses = await getCourseListByStudent();
       if (courses.status) {
         setCourseList(courses.data);
-        setLoadingCourses(false);
+        setError(null);
       } else {
         setError(courses.message || "Gagal memuat daftar mata kuliah.");
-        setLoadingCourses(false);
       }
-    } catch (error) {
-      console.log("Error loading courses:", error);
+    } catch (err) {
+      console.log("Error loading courses:", err);
       setError("Gagal memuat daftar mata kuliah.");
+    } finally {
       setLoadingCourses(false);
     }
   };
@@ -45,8 +46,8 @@ export default function MahasiswaIndex() {
       const data = await getUserData();
       setUserData(data);
     };
-    loadUserData();
 
+    loadUserData();
     loadCourses();
   }, []);
 
@@ -58,7 +59,7 @@ export default function MahasiswaIndex() {
 
   const handleCoursePress = (jadwalId: number) => {
     router.push({
-      pathname: "/riwayat-absensi",
+      pathname: "/(mahasiswa)/riwayat-absensi",
       params: {
         jadwalId: jadwalId.toString(),
       },
@@ -67,30 +68,15 @@ export default function MahasiswaIndex() {
 
   return (
     <View style={styles.container}>
-      <HeaderDashboard nama={userData?.nama} id={userData?.npm} foto={userData?.foto}/>
+      <HeaderDashboard
+        nama={userData?.nama}
+        id={userData?.npm}
+        foto={userData?.foto}
+        role="Mahasiswa"
+      />
 
-      {/* Menu */}
-      <View style={styles.menu}>
-        <Pressable
-          style={[styles.menuItem, { backgroundColor: theme.colors.primary }]}
-          onPress={() => router.push("/matakuliah")}
-        >
-          <Entypo name="book" size={24} color="white" />
-          <Text style={styles.menuItemText}>Matakuliah</Text>
-        </Pressable>
-        <Pressable
-          style={[styles.menuItem, { backgroundColor: theme.colors.primary }]}
-          onPress={() => router.push("/jadwal")}
-        >
-          <AntDesign name="schedule" size={24} color="white" />
-          <Text style={styles.menuItemText}>Jadwal Kuliah</Text>
-        </Pressable>
-      </View>
-      {/* End Menu */}
-
-      {/* Courses */}
       <ScrollView
-        style={{ marginVertical: 8 }}
+        style={styles.scrollArea}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -101,36 +87,134 @@ export default function MahasiswaIndex() {
           />
         }
       >
-        <Text variant="titleSmall">📚 Matakuliah yang sedang diambil</Text>
-        {loadingCourses ? (
-          <Text style={{ textAlign: "center", color: "grey", marginTop: 16 }}>Memuat daftar mata kuliah...</Text>
-        ) : error ? (
-          <Text style={{ textAlign: "center", color: "red", marginTop: 16}}>{error}</Text>
-        ) : courseList.length === 0 ? (
-          <Text style={{ textAlign: "center", color: "grey", marginTop: 16, width: "100%" }}>Tidak ada mata kuliah yang diambil.</Text>
-        ) : null}
-        <View>
-          {courseList.slice(0, 7).map((course) => (
-            <Pressable
-              key={course.jadwal_id}
-              onPress={() => handleCoursePress(course.jadwal_id)}
+        <Card
+          style={[
+            styles.summaryCard,
+            { backgroundColor: theme.colors.primaryContainer },
+          ]}
+        >
+          <Card.Content style={styles.summaryContent}>
+            <View style={styles.summaryTextWrap}>
+              <Text
+                variant="labelLarge"
+                style={[
+                  styles.summaryLabel,
+                  { color: theme.colors.onPrimaryContainer },
+                ]}
+              >
+                AKADEMIK SEMESTER BERJALAN
+              </Text>
+              <Text
+                variant="headlineSmall"
+                style={[
+                  styles.summaryValue,
+                  { color: theme.colors.onPrimaryContainer },
+                ]}
+              >
+                {courseList.length} Mata Kuliah
+              </Text>
+              <Text
+                variant="bodyMedium"
+                style={[
+                  styles.summaryHint,
+                  { color: theme.colors.onPrimaryContainer },
+                ]}
+              >
+                Pantau kehadiranmu dan cek riwayat absensi setiap pertemuan.
+              </Text>
+            </View>
+            <View
+              style={[
+                styles.summaryIconBox,
+                { backgroundColor: theme.colors.primary },
+              ]}
             >
-              <Card style={{ marginVertical: 6 }}>
-                <Card.Content>
-                  <Course
-                    id={course.kelas.id}
-                    namaKelas={course.kelas.nama_kelas}
-                    tipePertemuan={course.tipe_pertemuan || "N/A"}
-                    jadwalId={course.jadwal_id}
-                    persentase={course.statistik_absensi.presentase_kehadiran}
-                  />
-                </Card.Content>
-              </Card>
-            </Pressable>
-          ))}
+              <MaterialIcons
+                name="school"
+                size={28}
+                color={theme.colors.onPrimary}
+              />
+            </View>
+          </Card.Content>
+        </Card>
+
+        <View style={styles.menuRow}>
+          <Pressable
+            style={[styles.menuCard, { backgroundColor: "#0F766E" }]}
+            onPress={() => router.push("/(mahasiswa)/matakuliah")}
+          >
+            <Entypo name="book" size={24} color="white" />
+            <Text style={styles.menuTitle}>Matakuliah</Text>
+            <Text style={styles.menuSubtitle}>Lihat daftar kelasmu</Text>
+          </Pressable>
+
+          <Pressable
+            style={[styles.menuCard, { backgroundColor: "#1D4ED8" }]}
+            onPress={() => router.push("/(mahasiswa)/jadwal")}
+          >
+            <AntDesign name="schedule" size={24} color="white" />
+            <Text style={styles.menuTitle}>Jadwal Kuliah</Text>
+            <Text style={styles.menuSubtitle}>Atur ritme perkuliahan</Text>
+          </Pressable>
         </View>
+
+        <View style={styles.sectionHeader}>
+          <Text variant="titleMedium" style={styles.sectionTitle}>
+            Matakuliah Yang Diambil
+          </Text>
+          <Pressable onPress={() => router.push("/(mahasiswa)/matakuliah")}>
+            <Text style={{ color: theme.colors.primary, fontWeight: "700" }}>
+              Lihat Semua
+            </Text>
+          </Pressable>
+        </View>
+
+        {loadingCourses ? (
+          <View style={styles.stateCard}>
+            <ActivityIndicator size="small" />
+            <Text style={styles.stateText}>Memuat daftar mata kuliah...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.stateCard}>
+            <MaterialIcons
+              name="error-outline"
+              size={20}
+              color={theme.colors.error}
+            />
+            <Text style={[styles.stateText, { color: theme.colors.error }]}>
+              {error}
+            </Text>
+          </View>
+        ) : courseList.length === 0 ? (
+          <View style={styles.stateCard}>
+            <MaterialIcons name="inbox" size={20} color="#777" />
+            <Text style={styles.stateText}>
+              Tidak ada mata kuliah yang sedang diambil.
+            </Text>
+          </View>
+        ) : (
+          <View>
+            {courseList.slice(0, 7).map((course) => (
+              <Pressable
+                key={course.jadwal_id}
+                onPress={() => handleCoursePress(course.jadwal_id)}
+              >
+                <Card style={styles.courseCard}>
+                  <Card.Content>
+                    <Course
+                      id={course.kelas.id}
+                      namaKelas={course.kelas.nama_kelas}
+                      tipePertemuan={course.tipe_pertemuan || "N/A"}
+                      jadwalId={course.jadwal_id}
+                      persentase={course.statistik_absensi.presentase_kehadiran}
+                    />
+                  </Card.Content>
+                </Card>
+              </Pressable>
+            ))}
+          </View>
+        )}
       </ScrollView>
-      {/* End Courses */}
     </View>
   );
 }
@@ -138,37 +222,93 @@ export default function MahasiswaIndex() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    backgroundColor: "#F6F8FC",
+    paddingTop: 8,
   },
-  card: {
-    padding: 16,
-  },
-  title: {
-    textAlign: "center",
-    marginBottom: 24,
-    fontWeight: "bold",
-  },
-  userInfo: {
-    marginBottom: 24,
-    gap: 8,
-  },
-  menu: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginBottom: 24,
-  },
-  menuItem: {
+  scrollArea: {
     flex: 1,
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 16,
-    borderRadius: 8,
-    marginHorizontal: 8,
+    paddingHorizontal: 16,
   },
-  menuItemText: {
-    color: "white",
+  summaryCard: {
+    borderRadius: 16,
+    marginBottom: 14,
+  },
+  summaryContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  summaryTextWrap: {
+    flex: 1,
+  },
+  summaryLabel: {
+    fontWeight: "700",
+    opacity: 0.9,
+  },
+  summaryValue: {
+    marginTop: 6,
+    fontWeight: "800",
+  },
+  summaryHint: {
     marginTop: 8,
-    fontWeight: "bold",
+    lineHeight: 20,
+    opacity: 0.9,
+  },
+  summaryIconBox: {
+    width: 54,
+    height: 54,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  menuRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 16,
+  },
+  menuCard: {
+    flex: 1,
+    borderRadius: 14,
+    padding: 14,
+  },
+  menuTitle: {
+    marginTop: 8,
+    color: "white",
+    fontWeight: "800",
+    fontSize: 15,
+  },
+  menuSubtitle: {
+    marginTop: 4,
+    color: "rgba(255,255,255,0.9)",
+    fontSize: 12,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  sectionTitle: {
+    fontWeight: "700",
+  },
+  stateCard: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 14,
+    marginVertical: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  stateText: {
+    fontSize: 14,
+    color: "#444",
+  },
+  courseCard: {
+    marginBottom: 10,
+    borderRadius: 12,
+    backgroundColor: "white",
   },
 });

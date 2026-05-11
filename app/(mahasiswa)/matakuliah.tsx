@@ -1,8 +1,6 @@
 import { Course } from "@/components/Course";
-import {
-  getCourseListByStudent,
-  registerCourse,
-} from "@/lib/models/matakuliah";
+import { getCourseListByStudent, registerCourse } from "@/lib/models/matakuliah";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -13,6 +11,7 @@ import {
   View,
 } from "react-native";
 import {
+  ActivityIndicator,
   AnimatedFAB,
   Button,
   Card,
@@ -34,6 +33,8 @@ export default function Matakuliah() {
   const [accessCode, setAccessCode] = useState<string>("");
   const [snackbarVisible, setSnackbarVisible] = useState<boolean>(false);
   const [snackbarMessage, setSnackbarMessage] = useState<string>("");
+  const [isExtended, setIsExtended] = useState<boolean>(true);
+  const [submitting, setSubmitting] = useState<boolean>(false);
 
   const theme = useTheme();
 
@@ -45,14 +46,14 @@ export default function Matakuliah() {
       const courses = await getCourseListByStudent();
       if (courses.status) {
         setCourseList(courses.data);
-        setLoadingCourses(false);
+        setError(null);
       } else {
         setError(courses.message || "Gagal memuat daftar mata kuliah.");
-        setLoadingCourses(false);
       }
-    } catch (error) {
-      console.log("Error loading courses:", error);
+    } catch (err) {
+      console.log("Error loading courses:", err);
       setError("Gagal memuat daftar mata kuliah.");
+    } finally {
       setLoadingCourses(false);
     }
   };
@@ -63,12 +64,8 @@ export default function Matakuliah() {
     setRefreshing(false);
   };
 
-  const [isExtended, setIsExtended] = useState<boolean>(true);
-
   const onScroll = ({ nativeEvent }: any) => {
-    const currentScrollPosition =
-      Math.floor(nativeEvent?.contentOffset?.y) ?? 0;
-
+    const currentScrollPosition = Math.floor(nativeEvent?.contentOffset?.y) ?? 0;
     setIsExtended(currentScrollPosition <= 0);
   };
 
@@ -77,25 +74,32 @@ export default function Matakuliah() {
   }, []);
 
   const handleAddCourse = async () => {
-    const result = await registerCourse(accessCode);
+    if (!accessCode.trim()) {
+      setSnackbarMessage("Kode akses tidak boleh kosong.");
+      setSnackbarVisible(true);
+      return;
+    }
+
+    setSubmitting(true);
+    const result = await registerCourse(accessCode.trim());
+    setSubmitting(false);
+
     if (result.success) {
       hideModal();
       setAccessCode("");
-      loadCourses();
-
-      setSnackbarMessage("Berhasil mendaftar mata kuliah!");
+      await loadCourses();
+      setSnackbarMessage("Berhasil mendaftar mata kuliah.");
       setSnackbarVisible(true);
-    } else {
-      // setError(result.message)
-      setSnackbarMessage(result.message || "Gagal mendaftar mata kuliah");
-      setSnackbarVisible(true);
-      hideModal();
+      return;
     }
+
+    setSnackbarMessage(result.message || "Gagal mendaftar mata kuliah.");
+    setSnackbarVisible(true);
   };
 
   const handleCoursePress = (jadwalId: number) => {
     router.push({
-      pathname: "/riwayat-absensi",
+      pathname: "/(mahasiswa)/riwayat-absensi",
       params: {
         jadwalId: jadwalId.toString(),
       },
@@ -103,8 +107,9 @@ export default function Matakuliah() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { paddingHorizontal: 16 }]}>
+    <SafeAreaView style={styles.container}>
       <ScrollView
+        contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         onScroll={onScroll}
         refreshControl={
@@ -116,73 +121,115 @@ export default function Matakuliah() {
           />
         }
       >
-        {loadingCourses ? (
-          <Text style={{ textAlign: "center", color: "grey", marginTop: 16, width: "100%" }}>Memuat daftar mata kuliah...</Text>
-        ) : error ? (
-          <Text style={{ color: "red", textAlign: "center" }}>{error}</Text>
-        ) : courseList.length === 0 ? (
-          <Text style={{ textAlign: "center", color: "grey", marginTop: 16, width: "100%" }}>Tidak ada mata kuliah yang diambil.</Text>
-        ) : null}
-        <View>
-          {courseList.slice(0, 7).map((course) => (
-            <Pressable
-              key={course.jadwal_id}
-              onPress={() => handleCoursePress(course.jadwal_id)}
-            >
-              <Card style={{ marginVertical: 6 }}>
-                <Card.Content>
-                  <Course
-                    id={course.kelas.id}
-                    namaKelas={course.kelas.nama_kelas}
-                    tipePertemuan={course.tipe_pertemuan || "N/A"}
-                    jadwalId={course.jadwal_id}
-                    persentase={course.statistik_absensi.presentase_kehadiran}
-                  />
-                </Card.Content>
-              </Card>
-            </Pressable>
-          ))}
+
+        <View style={styles.sectionHeader}>
+          <Text variant="titleMedium" style={styles.sectionTitle}>
+            Daftar Matakuliah
+          </Text>
+          <View style={styles.sectionHint}>
+            <MaterialIcons name="touch-app" size={16} color={theme.colors.primary} />
+            <Text style={{ color: theme.colors.primary, fontWeight: "700" }}>
+              Tap untuk detail
+            </Text>
+          </View>
         </View>
+
+        {loadingCourses ? (
+          <View style={styles.stateCard}>
+            <ActivityIndicator size="small" />
+            <Text style={styles.stateText}>Memuat daftar mata kuliah...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.stateCard}>
+            <MaterialIcons
+              name="error-outline"
+              size={20}
+              color={theme.colors.error}
+            />
+            <Text style={[styles.stateText, { color: theme.colors.error }]}>
+              {error}
+            </Text>
+          </View>
+        ) : courseList.length === 0 ? (
+          <View style={styles.stateCard}>
+            <MaterialIcons name="inbox" size={20} color="#777" />
+            <Text style={styles.stateText}>Belum ada mata kuliah yang diambil.</Text>
+          </View>
+        ) : (
+          <View>
+            {courseList.map((course) => (
+              <Pressable
+                key={course.jadwal_id}
+                onPress={() => handleCoursePress(course.jadwal_id)}
+              >
+                <Card style={styles.courseCard}>
+                  <Card.Content>
+                    <Course
+                      id={course.kelas.id}
+                      namaKelas={course.kelas.nama_kelas}
+                      tipePertemuan={course.tipe_pertemuan || "N/A"}
+                      jadwalId={course.jadwal_id}
+                      persentase={course.statistik_absensi.presentase_kehadiran}
+                    />
+                  </Card.Content>
+                </Card>
+              </Pressable>
+            ))}
+          </View>
+        )}
       </ScrollView>
+
       <AnimatedFAB
-        icon={"plus"}
-        label={"Tambah"}
+        icon="plus"
+        label="Tambah Kelas"
         extended={isExtended}
         onPress={showModal}
-        visible={true}
-        animateFrom={"right"}
-        iconMode={"dynamic"}
+        visible
+        animateFrom="right"
+        iconMode="dynamic"
         style={[styles.fabStyle, { backgroundColor: theme.colors.primary }]}
         color="white"
       />
 
-      {/* Modal for adding new course */}
       <Modal
         visible={modalVisible}
         onDismiss={hideModal}
-        contentContainerStyle={styles.modal}
+        contentContainerStyle={[styles.modal, { backgroundColor: theme.colors.surface }]}
       >
-        <Text variant="titleMedium">Masukan Kode Akses Matakuliah</Text>
+        <Text variant="titleMedium" style={styles.modalTitle}>
+          Tambah Matakuliah
+        </Text>
+        <Text variant="bodySmall" style={styles.modalSubtitle}>
+          Masukkan kode akses dari dosen pengampu.
+        </Text>
         <TextInput
           mode="outlined"
           label="Kode Akses"
-          placeholder="xxxxxxxxxx"
+          placeholder="Contoh: IFKOM-2026-A"
+          value={accessCode}
           onChangeText={setAccessCode}
+          autoCapitalize="characters"
+          style={styles.input}
         />
-        <HelperText
-          type="info"
-          visible={true}
-          theme={{ colors: { primary: "green" } }}
-        >
+        <HelperText type="info" visible>
           Kode akses dapat diperoleh dari dosen pengampu matakuliah.
         </HelperText>
-        <Button icon="plus" mode="elevated" onPress={handleAddCourse}>
-          Tambah
-        </Button>
+        <View style={styles.modalActions}>
+          <Button mode="text" onPress={hideModal}>
+            Batal
+          </Button>
+          <Button
+            icon="plus"
+            mode="contained"
+            onPress={handleAddCourse}
+            loading={submitting}
+            disabled={submitting}
+          >
+            Tambah
+          </Button>
+        </View>
       </Modal>
-      {/* Modal for adding new course */}
 
-      {/* Snackbar for messages */}
       <Snackbar
         visible={snackbarVisible}
         onDismiss={() => setSnackbarVisible(false)}
@@ -200,7 +247,50 @@ export default function Matakuliah() {
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
+    flex: 1,
+    backgroundColor: "#F6F8FC",
+  },
+  content: {
+    paddingLeft: 16,
+    paddingRight: 16,
+    paddingBottom: 100,
+  },
+  infoCard: {
+    borderRadius: 16,
+    marginBottom: 14,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  sectionTitle: {
+    fontWeight: "700",
+  },
+  sectionHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  stateCard: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 14,
+    marginVertical: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  stateText: {
+    fontSize: 14,
+    color: "#444",
+  },
+  courseCard: {
+    marginBottom: 10,
+    borderRadius: 12,
+    backgroundColor: "white",
   },
   fabStyle: {
     bottom: 16,
@@ -208,8 +298,24 @@ const styles = StyleSheet.create({
     position: "absolute",
   },
   modal: {
-    backgroundColor: "white",
     marginHorizontal: 16,
+    borderRadius: 14,
     padding: 20,
+  },
+  modalTitle: {
+    fontWeight: "700",
+  },
+  modalSubtitle: {
+    marginTop: 6,
+    opacity: 0.85,
+  },
+  input: {
+    marginTop: 14,
+  },
+  modalActions: {
+    marginTop: 8,
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 8,
   },
 });

@@ -4,8 +4,8 @@ import {
   tutupSesiAbsensi,
 } from "@/lib/models/absensi";
 import Feather from "@expo/vector-icons/Feather";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router, useLocalSearchParams } from "expo-router";
-import { hide } from "expo-router/build/utils/splash";
 import { useEffect, useState } from "react";
 import {
   Alert,
@@ -17,6 +17,7 @@ import {
   View,
 } from "react-native";
 import {
+  ActivityIndicator,
   Button,
   Card,
   Chip,
@@ -38,12 +39,9 @@ export default function DetailAbsensi() {
   const [visibleDialog, setVisibleDialog] = useState<boolean>(false);
   const [editData, setEditData] = useState<any>(null);
   const [selectedStatus, setSelectedStatus] = useState<string>("hadir");
-
   const theme = useTheme();
 
-  const hideDialog = () => {
-    setVisibleDialog(false);
-  };
+  const hideDialog = () => setVisibleDialog(false);
 
   const handleShowEditDialog = (data: any) => {
     setEditData(data);
@@ -51,31 +49,12 @@ export default function DetailAbsensi() {
     setVisibleDialog(true);
   };
 
-  const handleEditStatus = async () => {
-    if (!editData && !selectedStatus) return;
+  const loadDetailAbsensi = async (currentSesiId: number) => {
     try {
-      const result = await editStatusAbsensiMahasiswa(
-        Number(sesiId),
-        editData.mahasiswa_id,
-        selectedStatus
-      );
-      if (result.status) {
-        Alert.alert("Sukses", "Status absensi berhasil diubah");
-        await loadDetailAbsensi(Number(sesiId));
-        hideDialog();
-      } else {
-        Alert.alert("Error", result.message || "Gagal mengubah status absensi");
-      }
-    } catch (error: any) {
-      Alert.alert("Error", error.message || "Terjadi kesalahan");
-    }
-  };
-
-  const loadDetailAbsensi = async (sesiId: number) => {
-    try {
-      const result = await getDetailSesiAbsensi(sesiId);
+      const result = await getDetailSesiAbsensi(currentSesiId);
       if (result.status) {
         setDetailData(result.data);
+        setError(null);
       } else {
         setError(result.message || "Gagal memuat detail absensi.");
       }
@@ -94,25 +73,80 @@ export default function DetailAbsensi() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    setLoading(true);
     await loadDetailAbsensi(Number(sesiId));
     setRefreshing(false);
-    setLoading(false);
+  };
+
+  const handleEditStatus = async () => {
+    if (!editData || !selectedStatus) return;
+    try {
+      const result = await editStatusAbsensiMahasiswa(
+        Number(sesiId),
+        editData.mahasiswa_id,
+        selectedStatus
+      );
+      if (result?.status) {
+        Alert.alert("Sukses", "Status absensi berhasil diubah.");
+        await loadDetailAbsensi(Number(sesiId));
+        hideDialog();
+      } else {
+        Alert.alert("Error", result?.message || "Gagal mengubah status absensi.");
+      }
+    } catch (err: any) {
+      Alert.alert("Error", err.message || "Terjadi kesalahan.");
+    }
+  };
+
+  const handleTutupSesi = () => {
+    Alert.alert(
+      "Tutup Sesi Absensi",
+      "Apakah Anda yakin ingin menutup sesi absensi ini?",
+      [
+        { text: "Batal", style: "cancel" },
+        {
+          text: "Tutup",
+          style: "destructive",
+          onPress: async () => {
+            setClosingSession(true);
+            try {
+              const result = await tutupSesiAbsensi(Number(sesiId));
+              if (result?.status) {
+                Alert.alert("Sukses", "Sesi absensi berhasil ditutup.");
+                await loadDetailAbsensi(Number(sesiId));
+              } else {
+                Alert.alert("Error", result?.message || "Gagal menutup sesi absensi.");
+              }
+            } catch (err: any) {
+              Alert.alert("Error", err.message || "Terjadi kesalahan saat menutup sesi.");
+            } finally {
+              setClosingSession(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleLihatPengajuan = () => {
+    router.push({
+      pathname: "/(dosen)/kelas/pengajuanIzinSakit",
+      params: { sesiId: String(sesiId) },
+    });
   };
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case "hadir":
-        return "#4CAF50";
+        return "#16A34A";
       case "izin":
-        return "#2196F3";
+        return "#CA8A04";
       case "sakit":
-        return "#FF9800";
+        return "#0284C7";
       case "alpha":
       case "alfa":
-        return "#F44336";
+        return "#DC2626";
       default:
-        return "#757575";
+        return "#6B7280";
     }
   };
 
@@ -132,91 +166,17 @@ export default function DetailAbsensi() {
     }
   };
 
-  const filteredDaftarAbsensi = detailData?.absensi?.daftar?.filter(
-    (item: any) => {
-      const query = searchQuery.toLowerCase();
-      return (
-        item.npm.toLowerCase().includes(query) ||
-        item.nama.toLowerCase().includes(query)
-      );
-    }
-  );
-
-  const handleTutupSesi = () => {
-    Alert.alert(
-      "Tutup Sesi Absensi",
-      "Apakah Anda yakin ingin menutup sesi absensi ini?",
-      [
-        {
-          text: "Batal",
-          style: "cancel",
-        },
-        {
-          text: "Tutup",
-          style: "destructive",
-          onPress: async () => {
-            setClosingSession(true);
-            try {
-              const result = await tutupSesiAbsensi(Number(sesiId));
-              if (result.status) {
-                Alert.alert("Sukses", "Sesi absensi berhasil ditutup");
-                await loadDetailAbsensi(Number(sesiId));
-              } else {
-                Alert.alert(
-                  "Error",
-                  result.message || "Gagal menutup sesi absensi"
-                );
-              }
-            } catch (err: any) {
-              Alert.alert(
-                "Error",
-                err.message || "Terjadi kesalahan saat menutup sesi"
-              );
-            } finally {
-              setClosingSession(false);
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const handleLihatPengajuan = () => {
-    router.push({
-      pathname: "/(dosen)/kelas/pengajuanIzinSakit",
-      params: { sesiId: sesiId.toString() },
-    });
-  };
-
-  if (loading) {
+  const filteredDaftarAbsensi = detailData?.absensi?.daftar?.filter((item: any) => {
+    const query = searchQuery.toLowerCase();
     return (
-      <SafeAreaProvider style={styles.container}>
-        <Text style={{ textAlign: "center", marginTop: 20 }}>
-          Memuat detail absensi...
-        </Text>
-      </SafeAreaProvider>
+      item.npm.toLowerCase().includes(query) || item.nama.toLowerCase().includes(query)
     );
-  }
-
-  if (error) {
-    return (
-      <SafeAreaProvider style={styles.container}>
-        <Text style={{ color: "red" }}>{error}</Text>
-      </SafeAreaProvider>
-    );
-  }
-
-  if (!detailData) {
-    return (
-      <SafeAreaProvider style={styles.container}>
-        <Text>Tidak ada data.</Text>
-      </SafeAreaProvider>
-    );
-  }
+  });
 
   return (
     <SafeAreaProvider style={styles.container}>
       <ScrollView
+        contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -227,168 +187,162 @@ export default function DetailAbsensi() {
           />
         }
       >
-        {/* Header Info */}
-        <Card style={styles.headerCard}>
-          <Card.Content>
-            <Text variant="headlineSmall" style={styles.title}>
-              Absensi {detailData.tanggal}
-            </Text>
-            <Text variant="bodyMedium" style={styles.subtitle}>
-              {detailData.kelas?.nama_kelas} •{" "}
-              {detailData.kelas?.matakuliah?.nama}
-            </Text>
-          </Card.Content>
-        </Card>
-
-        {/* Status Sesi */}
-        <Card
-          style={[
-            styles.statusCard,
-            {
-              backgroundColor:
-                detailData.status === "buka" ? "#4CAF50" : "#757575",
-            },
-          ]}
-        >
-          <Card.Content>
-            <Text variant="bodyLarge" style={styles.statusText}>
-              ✓ Sesi absensi di {detailData.status}
-            </Text>
-          </Card.Content>
-        </Card>
-
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="cari berdasarkan npm atau nama"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery !== "" && (
-            <TouchableOpacity
-              style={styles.clearButton}
-              onPress={() => setSearchQuery("")}
-            >
-              <Text style={styles.clearButtonText}>✕</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* List Mahasiswa */}
-        {filteredDaftarAbsensi && filteredDaftarAbsensi.length > 0 ? (
-          filteredDaftarAbsensi.map((item: any) => (
-            <Card key={item.mahasiswa_id} style={styles.mahasiswaCard}>
+        {loading ? (
+          <View style={styles.stateCard}>
+            <ActivityIndicator size="small" />
+            <Text style={styles.stateText}>Memuat detail absensi...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.stateCard}>
+            <MaterialIcons name="error-outline" size={20} color={theme.colors.error} />
+            <Text style={[styles.stateText, { color: theme.colors.error }]}>{error}</Text>
+          </View>
+        ) : !detailData ? (
+          <View style={styles.stateCard}>
+            <MaterialIcons name="inbox" size={20} color="#777" />
+            <Text style={styles.stateText}>Tidak ada data absensi.</Text>
+          </View>
+        ) : (
+          <>
+            <Card style={[styles.headerCard, { backgroundColor: theme.colors.primaryContainer }]}>
               <Card.Content>
-                <View style={styles.mahasiswaInfo}>
-                  <View style={styles.mahasiswaTextContainer}>
-                    <Text variant="titleMedium" style={styles.mahasiswaNama}>
-                      {item.npm} - {item.nama}
-                    </Text>
-                    <View style={styles.statusContainer}>
-                      <Chip
-                        icon={getStatusIcon(item.absensi?.status || "alpha")}
-                        style={[
-                          styles.statusChip,
-                          {
-                            backgroundColor: getStatusColor(
-                              item.absensi?.status || "alpha"
-                            ),
-                          },
-                        ]}
-                        textStyle={styles.statusChipText}
-                      >
-                        {item.absensi?.status
-                          ? item.absensi.status.charAt(0).toUpperCase() +
-                            item.absensi.status.slice(1)
-                          : "Alpha"}
-                      </Chip>
+                <Text
+                  variant="titleLarge"
+                  style={{ fontWeight: "800", color: theme.colors.onPrimaryContainer }}
+                >
+                  Absensi {detailData.tanggal}
+                </Text>
+                <Text
+                  variant="bodyMedium"
+                  style={{ marginTop: 4, color: theme.colors.onPrimaryContainer }}
+                >
+                 Kelas :  {detailData.kelas?.nama_kelas} • {detailData.kelas?.matakuliah?.nama}
+                </Text>
+              </Card.Content>
+            </Card>
+
+            <Card
+              style={[
+                styles.statusCard,
+                { backgroundColor: detailData.status === "buka" ? "#16A34A" : "#6B7280" },
+              ]}
+            >
+              <Card.Content>
+                <Text variant="bodyLarge" style={styles.statusText}>
+                  Sesi absensi: {String(detailData.status || "-").toUpperCase()}
+                </Text>
+              </Card.Content>
+            </Card>
+
+            <View style={styles.searchContainer}>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Cari berdasarkan NPM atau nama"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+              {searchQuery !== "" && (
+                <TouchableOpacity style={styles.clearButton} onPress={() => setSearchQuery("")}>
+                  <Text style={styles.clearButtonText}>×</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <Card style={styles.summaryCard}>
+              <Card.Content>
+                <Text variant="titleMedium" style={styles.summaryTitle}>
+                  Ringkasan Kehadiran
+                </Text>
+                <View style={styles.summaryGrid}>
+                  <View style={styles.summaryItem}>
+                    <Text style={styles.summaryLabel}>Hadir</Text>
+                    <Text style={styles.summaryValue}>{detailData.absensi?.hadir || 0}</Text>
+                  </View>
+                  <View style={styles.summaryItem}>
+                    <Text style={styles.summaryLabel}>Izin</Text>
+                    <Text style={styles.summaryValue}>{detailData.absensi?.izin || 0}</Text>
+                  </View>
+                  <View style={styles.summaryItem}>
+                    <Text style={styles.summaryLabel}>Sakit</Text>
+                    <Text style={styles.summaryValue}>{detailData.absensi?.sakit || 0}</Text>
+                  </View>
+                  <View style={styles.summaryItem}>
+                    <Text style={styles.summaryLabel}>Alfa</Text>
+                    <Text style={styles.summaryValue}>{detailData.absensi?.alpha || 0}</Text>
+                  </View>
+                </View>
+                <Text style={styles.totalText}>
+                  Total mahasiswa: {detailData.absensi?.total_mahasiswa || 0}
+                </Text>
+                <Button mode="contained-tonal" onPress={handleLihatPengajuan} style={{ marginTop: 10 }}>
+                  Lihat Pengajuan Izin/Sakit
+                </Button>
+              </Card.Content>
+            </Card>
+
+            {filteredDaftarAbsensi && filteredDaftarAbsensi.length > 0 ? (
+              filteredDaftarAbsensi.map((item: any) => (
+                <Card key={item.mahasiswa_id} style={styles.mahasiswaCard}>
+                  <Card.Content>
+                    <View style={styles.mahasiswaHeader}>
+                      <Text variant="titleMedium" style={styles.mahasiswaNama}>
+                        {item.npm} - {item.nama}
+                      </Text>
                       {closingSession ? null : (
-                        <Button
-                          mode="text"
-                          onPress={() => handleShowEditDialog(item)}
-                        >
-                          <Feather name="edit" size={20} color="black" />
+                        <Button mode="text" onPress={() => handleShowEditDialog(item)}>
+                          <Feather name="edit" size={18} color="#111" />
                         </Button>
                       )}
                     </View>
-                  </View>
-                </View>
-              </Card.Content>
-            </Card>
-          ))
-        ) : (
-          <View style={styles.emptyContainer}>
-            <Text>
-              {searchQuery
-                ? "Tidak ada mahasiswa yang sesuai pencarian"
-                : "Belum ada data absensi"}
-            </Text>
-          </View>
-        )}
+                    <Chip
+                      icon={getStatusIcon(item.absensi?.status || "alpha")}
+                      style={[
+                        styles.statusChip,
+                        { backgroundColor: getStatusColor(item.absensi?.status || "alpha") },
+                      ]}
+                      textStyle={styles.statusChipText}
+                    >
+                      {item.absensi?.status
+                        ? item.absensi.status.charAt(0).toUpperCase() + item.absensi.status.slice(1)
+                        : "Alfa"}
+                    </Chip>
+                  </Card.Content>
+                </Card>
+              ))
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Text>
+                  {searchQuery
+                    ? "Tidak ada mahasiswa yang sesuai pencarian."
+                    : "Belum ada data absensi."}
+                </Text>
+              </View>
+            )}
 
-        {/* Button Tutup Sesi - Hanya muncul saat sesi buka */}
-        {detailData.status === "buka" && (
-          <Button
-            mode="contained"
-            style={styles.actionButton}
-            buttonColor="#F44336"
-            onPress={handleTutupSesi}
-            loading={closingSession}
-            disabled={closingSession}
-          >
-            {closingSession ? "Menutup Sesi..." : "TUTUP SESI ABSENSI"}
-          </Button>
+            {detailData.status === "buka" && (
+              <Button
+                mode="contained"
+                style={styles.actionButton}
+                buttonColor="#DC2626"
+                onPress={handleTutupSesi}
+                loading={closingSession}
+                disabled={closingSession}
+              >
+                {closingSession ? "Menutup sesi..." : "Tutup Sesi Absensi"}
+              </Button>
+            )}
+          </>
         )}
-
-        {/* Summary Statistics */}
-        <Card style={styles.summaryCard}>
-          <Card.Content>
-            <Text variant="titleMedium" style={styles.summaryTitle}>
-              Ringkasan Kehadiran
-            </Text>
-            <View style={styles.summaryRow}>
-              <Text variant="bodyMedium">✅ Hadir:</Text>
-              <Text variant="bodyMedium">{detailData.absensi?.hadir || 0}</Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text variant="bodyMedium">📝 Izin:</Text>
-              <Text variant="bodyMedium">{detailData.absensi?.izin || 0}</Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text variant="bodyMedium">🏥 Sakit:</Text>
-              <Text variant="bodyMedium">{detailData.absensi?.sakit || 0}</Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text variant="bodyMedium">❌ Alpha:</Text>
-              <Text variant="bodyMedium">{detailData.absensi?.alpha || 0}</Text>
-            </View>
-            <View style={[styles.summaryRow, styles.summaryTotal]}>
-              <Text variant="bodyLarge" style={styles.summaryTotalText}>
-                Total:
-              </Text>
-              <Text variant="bodyLarge" style={styles.summaryTotalText}>
-                {detailData.absensi?.total_mahasiswa || 0} mahasiswa
-              </Text>
-            </View>
-            <Button mode="contained-tonal" onPress={handleLihatPengajuan}>
-              Lihat Pengajuan Izin/Sakit
-            </Button>
-          </Card.Content>
-        </Card>
       </ScrollView>
 
       <Dialog visible={visibleDialog} onDismiss={hideDialog}>
-        <Dialog.Title>Edit Absensi</Dialog.Title>
+        <Dialog.Title>Edit Status Absensi</Dialog.Title>
         <Dialog.Content>
-          <Text>Nama : {editData?.nama}</Text>
-          <Text>NPM : {editData?.npm}</Text>
+          <Text>Nama: {editData?.nama}</Text>
+          <Text>NPM: {editData?.npm}</Text>
           <View style={{ marginTop: 16 }}>
-            <Text>Pilih Status :</Text>
-            <RadioButton.Group
-              onValueChange={(newValue) => setSelectedStatus(newValue)}
-              value={selectedStatus}
-            >
+            <Text>Pilih status:</Text>
+            <RadioButton.Group value={selectedStatus} onValueChange={setSelectedStatus}>
               <RadioButton.Item label="Hadir" value="hadir" />
               <RadioButton.Item label="Izin" value="izin" />
               <RadioButton.Item label="Sakit" value="sakit" />
@@ -397,8 +351,8 @@ export default function DetailAbsensi() {
           </View>
         </Dialog.Content>
         <Dialog.Actions>
-          <Button onPress={() => hideDialog()}>Batal</Button>
-          <Button onPress={() => handleEditStatus()}>Simpan Perubahan</Button>
+          <Button onPress={hideDialog}>Batal</Button>
+          <Button onPress={handleEditStatus}>Simpan</Button>
         </Dialog.Actions>
       </Dialog>
     </SafeAreaProvider>
@@ -408,116 +362,134 @@ export default function DetailAbsensi() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#F6F8FC",
+  },
+  content: {
+    padding: 16,
+    paddingBottom: 24,
+  },
+  stateCard: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 14,
+    marginVertical: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  stateText: {
+    fontSize: 14,
+    color: "#444",
   },
   headerCard: {
-    margin: 16,
-    marginBottom: 8,
-  },
-  title: {
-    fontWeight: "bold",
-  },
-  subtitle: {
-    color: "#666",
-    marginTop: 4,
+    borderRadius: 16,
+    marginBottom: 10,
   },
   statusCard: {
-    marginHorizontal: 16,
-    marginBottom: 16,
+    borderRadius: 12,
+    marginBottom: 14,
   },
   statusText: {
     color: "white",
-    fontWeight: "bold",
+    fontWeight: "700",
   },
   searchContainer: {
-    marginHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 12,
     position: "relative",
   },
   searchInput: {
     backgroundColor: "white",
-    borderRadius: 25,
-    paddingHorizontal: 20,
+    borderRadius: 12,
+    paddingHorizontal: 16,
     paddingVertical: 12,
-    fontSize: 16,
+    fontSize: 15,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "#E5E7EB",
   },
   clearButton: {
     position: "absolute",
-    right: 15,
+    right: 12,
     top: 10,
-    width: 30,
-    height: 30,
+    width: 26,
+    height: 26,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f0f0f0",
-    borderRadius: 15,
+    backgroundColor: "#F3F4F6",
+    borderRadius: 13,
   },
   clearButtonText: {
     fontSize: 18,
     color: "#666",
-  },
-  mahasiswaCard: {
-    marginHorizontal: 16,
-    marginBottom: 12,
-    backgroundColor: "white",
-  },
-  mahasiswaInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  mahasiswaTextContainer: {
-    flex: 1,
-  },
-  mahasiswaNama: {
-    fontWeight: "500",
-    marginBottom: 8,
-  },
-  statusContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  statusChip: {
-    alignSelf: "flex-start",
-  },
-  statusChipText: {
-    color: "white",
-    fontWeight: "bold",
-    fontSize: 12,
-  },
-  emptyContainer: {
-    padding: 40,
-    alignItems: "center",
-  },
-  actionButton: {
-    marginHorizontal: 16,
-    marginVertical: 16,
-    paddingVertical: 8,
+    lineHeight: 20,
   },
   summaryCard: {
-    marginHorizontal: 16,
-    marginBottom: 24,
+    borderRadius: 12,
+    marginBottom: 12,
     backgroundColor: "white",
   },
   summaryTitle: {
-    fontWeight: "bold",
-    marginBottom: 12,
+    fontWeight: "700",
+    marginBottom: 10,
   },
-  summaryRow: {
+  summaryGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    rowGap: 8,
+  },
+  summaryItem: {
+    width: "48%",
+    backgroundColor: "#F9FAFB",
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+  },
+  summaryLabel: {
+    color: "#6B7280",
+    fontSize: 12,
+  },
+  summaryValue: {
+    marginTop: 2,
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#111827",
+  },
+  totalText: {
+    marginTop: 10,
+    color: "#374151",
+    fontWeight: "600",
+  },
+  mahasiswaCard: {
+    borderRadius: 12,
+    marginBottom: 10,
+    backgroundColor: "white",
+  },
+  mahasiswaHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingVertical: 6,
+    alignItems: "center",
   },
-  summaryTotal: {
+  mahasiswaNama: {
+    fontWeight: "600",
+    flex: 1,
+    paddingRight: 8,
+  },
+  statusChip: {
+    alignSelf: "flex-start",
     marginTop: 8,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#e0e0e0",
   },
-  summaryTotalText: {
-    fontWeight: "bold",
+  statusChipText: {
+    color: "white",
+    fontWeight: "700",
+    fontSize: 12,
+  },
+  emptyContainer: {
+    padding: 32,
+    alignItems: "center",
+  },
+  actionButton: {
+    marginTop: 8,
+    borderRadius: 10,
   },
 });
