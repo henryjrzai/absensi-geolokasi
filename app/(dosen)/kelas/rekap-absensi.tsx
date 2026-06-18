@@ -6,6 +6,10 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as FileSystem from "expo-file-system/legacy";
+import * as Sharing from "expo-sharing";
+import { API_URL } from "@/lib/apiConfig";
 import {
   ActivityIndicator,
   AnimatedFAB,
@@ -29,6 +33,7 @@ export default function RekapAbsensi() {
   const [isExtended, setIsExtended] = useState<boolean>(false);
   const [visible, setVisible] = useState<boolean>(false);
   const [locationDialogVisible, setLocationDialogVisible] = useState<boolean>(false);
+  const [downloading, setDownloading] = useState<boolean>(false);
   const theme = useTheme();
 
   const toggleDialog = () => setVisible((v) => !v);
@@ -116,6 +121,48 @@ export default function RekapAbsensi() {
     }
   };
 
+  const handleDownloadPDF = async () => {
+    const kelasId = rekapData?.data?.kelas_id;
+    if (!kelasId || !jadwalId) {
+      Alert.alert("Error", "ID Kelas atau ID Jadwal tidak ditemukan.");
+      return;
+    }
+
+    try {
+      setDownloading(true);
+      const token = await AsyncStorage.getItem("token");
+      
+      const downloadUrl = `${API_URL}/kelas/${kelasId}/jadwal/${jadwalId}/absensi-pdf`;
+      const filename = `Laporan_Absensi_Kelas_${kelasId}_Jadwal_${jadwalId}.pdf`;
+      const fileUri = `${FileSystem.documentDirectory}${filename}`;
+
+      const response = await FileSystem.downloadAsync(downloadUrl, fileUri, {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+      });
+
+      if (response.status === 200) {
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(fileUri, {
+            mimeType: "application/pdf",
+            dialogTitle: "Unduh Laporan Absensi",
+            UTI: "com.adobe.pdf",
+          });
+        } else {
+          Alert.alert("Sukses", `File berhasil diunduh ke: ${fileUri}`);
+        }
+      } else {
+        Alert.alert("Gagal", "Gagal mengunduh file laporan absensi.");
+      }
+    } catch (err: any) {
+      console.error("Download error:", err);
+      Alert.alert("Error", err.message || "Terjadi kesalahan saat mengunduh laporan.");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   const sesiList = rekapData?.sesi_kuliah || [];
 
   return (
@@ -157,6 +204,22 @@ export default function RekapAbsensi() {
             >
               Pilih sesi untuk melihat detail absensi mahasiswa.
             </Text>
+            <Button
+              icon="file-pdf-box"
+              mode="contained"
+              onPress={handleDownloadPDF}
+              loading={downloading}
+              disabled={downloading || !rekapData}
+              style={{
+                marginTop: 14,
+                backgroundColor: theme.colors.primary,
+                borderRadius: 8,
+              }}
+              labelStyle={{ fontWeight: "700" }}
+              textColor={theme.colors.onPrimary}
+            >
+              Unduh Laporan PDF
+            </Button>
           </Card.Content>
         </Card>
 

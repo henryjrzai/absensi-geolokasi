@@ -1,7 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
-export const API_URL = "https://absensi-fikom.jodiearya.web.id/api";
+export const API_URL = process.env.EXPO_PUBLIC_ENDPOINT_API;
+console.log(`Base URL : ${API_URL}`);
 export const API_BASE_URL = "https://absensi-fikom.jodiearya.web.id";
 
 let inMemoryToken: string | null = null;

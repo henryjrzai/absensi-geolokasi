@@ -16,6 +16,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as FileSystem from "expo-file-system/legacy";
+import * as Sharing from "expo-sharing";
+import { API_URL } from "@/lib/apiConfig";
 import {
   ActivityIndicator,
   Button,
@@ -39,6 +43,7 @@ export default function DetailAbsensi() {
   const [visibleDialog, setVisibleDialog] = useState<boolean>(false);
   const [editData, setEditData] = useState<any>(null);
   const [selectedStatus, setSelectedStatus] = useState<string>("hadir");
+  const [downloading, setDownloading] = useState<boolean>(false);
   const theme = useTheme();
 
   const hideDialog = () => setVisibleDialog(false);
@@ -132,6 +137,47 @@ export default function DetailAbsensi() {
       pathname: "/(dosen)/kelas/pengajuanIzinSakit",
       params: { sesiId: String(sesiId) },
     });
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!sesiId) {
+      Alert.alert("Error", "ID Sesi tidak ditemukan.");
+      return;
+    }
+
+    try {
+      setDownloading(true);
+      const token = await AsyncStorage.getItem("token");
+      
+      const downloadUrl = `${API_URL}/absensi/sesi/${sesiId}/export`;
+      const filename = `Laporan_Absensi_Sesi_${sesiId}.pdf`;
+      const fileUri = `${FileSystem.documentDirectory}${filename}`;
+
+      const response = await FileSystem.downloadAsync(downloadUrl, fileUri, {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+      });
+
+      if (response.status === 200) {
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(fileUri, {
+            mimeType: "application/pdf",
+            dialogTitle: "Unduh Laporan Sesi Absensi",
+            UTI: "com.adobe.pdf",
+          });
+        } else {
+          Alert.alert("Sukses", `File berhasil diunduh ke: ${fileUri}`);
+        }
+      } else {
+        Alert.alert("Gagal", "Gagal mengunduh file laporan sesi absensi.");
+      }
+    } catch (err: any) {
+      console.error("Download error:", err);
+      Alert.alert("Error", err.message || "Terjadi kesalahan saat mengunduh laporan.");
+    } finally {
+      setDownloading(false);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -276,6 +322,22 @@ export default function DetailAbsensi() {
                 </Text>
                 <Button mode="contained-tonal" onPress={handleLihatPengajuan} style={{ marginTop: 10 }}>
                   Lihat Pengajuan Izin/Sakit
+                </Button>
+                <Button
+                  icon="file-pdf-box"
+                  mode="contained"
+                  onPress={handleDownloadPDF}
+                  loading={downloading}
+                  disabled={downloading || !detailData}
+                  style={{
+                    marginTop: 10,
+                    backgroundColor: theme.colors.primary,
+                    borderRadius: 8,
+                  }}
+                  labelStyle={{ fontWeight: "700" }}
+                  textColor={theme.colors.onPrimary}
+                >
+                  Unduh Laporan Sesi PDF
                 </Button>
               </Card.Content>
             </Card>
