@@ -13,6 +13,28 @@ export async function getCourseListByStudent() {
   }
 }
 
+export async function getAvailableCourses() {
+  try {
+    const response = await api.get(`/kelas/tersedia`);
+    return response.data;
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+}
+
+export async function registerCourseById(kelasId: number) {
+  try {
+    const response = await api.post(`/kelas/${kelasId}/daftar`);
+    return { success: true, data: response.data };
+  } catch (e: any) {
+    const errorMessage =
+      e.response?.data?.message || "Terjadi kesalahan saat mendaftar";
+
+    return { success: false, message: errorMessage };
+  }
+}
+
 /**
  * Mendaftarkan diri pada mata kuliah tertentu.
  */

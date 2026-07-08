@@ -1,5 +1,9 @@
 import { Course } from "@/components/Course";
-import { getCourseListByStudent, registerCourse } from "@/lib/models/matakuliah";
+import {
+  getAvailableCourses,
+  getCourseListByStudent,
+  registerCourseById,
+} from "@/lib/models/matakuliah";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
@@ -8,38 +12,36 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
+  TouchableOpacity,
   View,
 } from "react-native";
 import {
   ActivityIndicator,
-  AnimatedFAB,
   Button,
   Card,
-  HelperText,
-  Modal,
   Snackbar,
   Text,
-  TextInput,
   useTheme,
 } from "react-native-paper";
-import { SafeAreaView } from "react-native-safe-area-context";
+
+type Tab = "diambil" | "tersedia";
 
 export default function Matakuliah() {
+  const [activeTab, setActiveTab] = useState<Tab>("diambil");
   const [courseList, setCourseList] = useState<any[]>([]);
+  const [availableCourses, setAvailableCourses] = useState<any[]>([]);
   const [loadingCourses, setLoadingCourses] = useState<boolean>(true);
+  const [loadingAvailableCourses, setLoadingAvailableCourses] =
+    useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [modalVisible, setModalVisible] = useState<boolean>(false);
-  const [accessCode, setAccessCode] = useState<string>("");
   const [snackbarVisible, setSnackbarVisible] = useState<boolean>(false);
   const [snackbarMessage, setSnackbarMessage] = useState<string>("");
-  const [isExtended, setIsExtended] = useState<boolean>(true);
-  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [submittingCourseId, setSubmittingCourseId] = useState<number | null>(
+    null
+  );
 
   const theme = useTheme();
-
-  const showModal = () => setModalVisible(true);
-  const hideModal = () => setModalVisible(false);
 
   const loadCourses = async () => {
     try {
@@ -58,60 +60,108 @@ export default function Matakuliah() {
     }
   };
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadCourses();
-    setRefreshing(false);
+  const loadAvailableCourses = async () => {
+    try {
+      const result = await getAvailableCourses();
+      if (result.status) {
+        setAvailableCourses(result.data);
+      }
+    } catch (err) {
+      console.log("Error loading available courses:", err);
+    } finally {
+      setLoadingAvailableCourses(false);
+    }
   };
 
-  const onScroll = ({ nativeEvent }: any) => {
-    const currentScrollPosition = Math.floor(nativeEvent?.contentOffset?.y) ?? 0;
-    setIsExtended(currentScrollPosition <= 0);
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([loadCourses(), loadAvailableCourses()]);
+    setRefreshing(false);
   };
 
   useEffect(() => {
     loadCourses();
+    loadAvailableCourses();
   }, []);
 
-  const handleAddCourse = async () => {
-    if (!accessCode.trim()) {
-      setSnackbarMessage("Kode akses tidak boleh kosong.");
-      setSnackbarVisible(true);
-      return;
-    }
-
-    setSubmitting(true);
-    const result = await registerCourse(accessCode.trim());
-    setSubmitting(false);
+  const handleRegisterAvailableCourse = async (kelasId: number) => {
+    setSubmittingCourseId(kelasId);
+    const result = await registerCourseById(kelasId);
+    setSubmittingCourseId(null);
 
     if (result.success) {
-      hideModal();
-      setAccessCode("");
-      await loadCourses();
-      setSnackbarMessage("Berhasil mendaftar mata kuliah.");
+      await Promise.all([loadCourses(), loadAvailableCourses()]);
+      setSnackbarMessage("Berhasil mendaftar kelas.");
       setSnackbarVisible(true);
       return;
     }
 
-    setSnackbarMessage(result.message || "Gagal mendaftar mata kuliah.");
+    setSnackbarMessage(result.message || "Gagal mendaftar kelas.");
     setSnackbarVisible(true);
   };
 
   const handleCoursePress = (jadwalId: number) => {
     router.push({
       pathname: "/(mahasiswa)/riwayat-absensi",
-      params: {
-        jadwalId: jadwalId.toString(),
-      },
+      params: { jadwalId: jadwalId.toString() },
     });
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      {/* Tab bar */}
+      <View style={[styles.tabBar, { backgroundColor: theme.colors.background }]}>
+        <TouchableOpacity
+          style={[
+            styles.tabItem,
+            activeTab === "diambil" && {
+              borderBottomColor: theme.colors.primary,
+              borderBottomWidth: 2,
+            },
+          ]}
+          onPress={() => setActiveTab("diambil")}
+        >
+          <Text
+            variant="titleSmall"
+            style={[
+              styles.tabLabel,
+              activeTab === "diambil"
+                ? { color: theme.colors.primary, fontWeight: "700" }
+                : { color: "#888" },
+            ]}
+          >
+            Diambil ({courseList.length})
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.tabItem,
+            activeTab === "tersedia" && {
+              borderBottomColor: theme.colors.primary,
+              borderBottomWidth: 2,
+            },
+          ]}
+          onPress={() => setActiveTab("tersedia")}
+        >
+          <Text
+            variant="titleSmall"
+            style={[
+              styles.tabLabel,
+              activeTab === "tersedia"
+                ? { color: theme.colors.primary, fontWeight: "700" }
+                : { color: "#888" },
+            ]}
+          >
+            Tersedia ({availableCourses.length})
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Tab content */}
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
-        onScroll={onScroll}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -121,114 +171,118 @@ export default function Matakuliah() {
           />
         }
       >
+        {activeTab === "diambil" && (
+          <>
+            <View style={styles.sectionHintRow}>
+              <MaterialIcons name="touch-app" size={16} color={theme.colors.primary} />
+              <Text style={{ color: theme.colors.primary, fontWeight: "700", fontSize: 13 }}>
+                Tap untuk detail absensi
+              </Text>
+            </View>
 
-        <View style={styles.sectionHeader}>
-          <Text variant="titleMedium" style={styles.sectionTitle}>
-            Daftar Matakuliah
-          </Text>
-          <View style={styles.sectionHint}>
-            <MaterialIcons name="touch-app" size={16} color={theme.colors.primary} />
-            <Text style={{ color: theme.colors.primary, fontWeight: "700" }}>
-              Tap untuk detail
-            </Text>
-          </View>
-        </View>
+            {loadingCourses ? (
+              <View style={styles.stateCard}>
+                <ActivityIndicator size="small" />
+                <Text style={styles.stateText}>Memuat daftar mata kuliah...</Text>
+              </View>
+            ) : error ? (
+              <View style={styles.stateCard}>
+                <MaterialIcons name="error-outline" size={20} color={theme.colors.error} />
+                <Text style={[styles.stateText, { color: theme.colors.error }]}>{error}</Text>
+              </View>
+            ) : courseList.length === 0 ? (
+              <View style={styles.stateCard}>
+                <MaterialIcons name="inbox" size={20} color="#777" />
+                <Text style={styles.stateText}>Belum ada mata kuliah yang diambil.</Text>
+              </View>
+            ) : (
+              courseList.map((course) => (
+                <Pressable
+                  key={course.jadwal_id}
+                  onPress={() => handleCoursePress(course.jadwal_id)}
+                >
+                  <Card style={styles.courseCard}>
+                    <Card.Content>
+                      <Course
+                        id={course.kelas.id}
+                        namaKelas={course.kelas.nama_kelas}
+                        tipePertemuan={course.tipe_pertemuan || "N/A"}
+                        jadwalId={course.jadwal_id}
+                        persentase={course.statistik_absensi.presentase_kehadiran}
+                      />
+                    </Card.Content>
+                  </Card>
+                </Pressable>
+              ))
+            )}
+          </>
+        )}
 
-        {loadingCourses ? (
-          <View style={styles.stateCard}>
-            <ActivityIndicator size="small" />
-            <Text style={styles.stateText}>Memuat daftar mata kuliah...</Text>
-          </View>
-        ) : error ? (
-          <View style={styles.stateCard}>
-            <MaterialIcons
-              name="error-outline"
-              size={20}
-              color={theme.colors.error}
-            />
-            <Text style={[styles.stateText, { color: theme.colors.error }]}>
-              {error}
-            </Text>
-          </View>
-        ) : courseList.length === 0 ? (
-          <View style={styles.stateCard}>
-            <MaterialIcons name="inbox" size={20} color="#777" />
-            <Text style={styles.stateText}>Belum ada mata kuliah yang diambil.</Text>
-          </View>
-        ) : (
-          <View>
-            {courseList.map((course) => (
-              <Pressable
-                key={course.jadwal_id}
-                onPress={() => handleCoursePress(course.jadwal_id)}
-              >
-                <Card style={styles.courseCard}>
+        {activeTab === "tersedia" && (
+          <>
+            {loadingAvailableCourses ? (
+              <View style={styles.stateCard}>
+                <ActivityIndicator size="small" />
+                <Text style={styles.stateText}>Memuat kelas tersedia...</Text>
+              </View>
+            ) : availableCourses.length === 0 ? (
+              <View style={styles.stateCard}>
+                <MaterialIcons name="inbox" size={20} color="#777" />
+                <Text style={styles.stateText}>Tidak ada kelas tersedia.</Text>
+              </View>
+            ) : (
+              availableCourses.map((course) => (
+                <Card style={styles.availableCourseCard} key={course.id}>
                   <Card.Content>
-                    <Course
-                      id={course.kelas.id}
-                      namaKelas={course.kelas.nama_kelas}
-                      tipePertemuan={course.tipe_pertemuan || "N/A"}
-                      jadwalId={course.jadwal_id}
-                      persentase={course.statistik_absensi.presentase_kehadiran}
-                    />
+                    <Text variant="titleMedium" style={styles.availableCourseTitle}>
+                      {course.nama_kelas}
+                    </Text>
+                    <Text variant="bodyMedium">Dosen: {course.dosen?.nama || "-"}</Text>
+                    <Text variant="bodyMedium">
+                      Prodi: {course.prodi?.nama_prodi || "-"}
+                    </Text>
+                    {course.jadwal?.length > 0 && (
+                      <View style={styles.scheduleList}>
+                        {course.jadwal.map((jadwal: any) => (
+                          <Text
+                            key={jadwal.id}
+                            variant="bodySmall"
+                            style={styles.scheduleText}
+                          >
+                            {jadwal.hari} •{" "}
+                            {jadwal.jam?.jam_mulai?.slice(0, 5)} -{" "}
+                            {jadwal.jam?.jam_selesai?.slice(0, 5)} •{" "}
+                            {jadwal.ruangan?.nama_ruangan || "-"}
+                          </Text>
+                        ))}
+                      </View>
+                    )}
+                    <Button
+                      mode={course.sudah_terdaftar ? "outlined" : "contained"}
+                      disabled={
+                        course.sudah_terdaftar || submittingCourseId === course.id
+                      }
+                      loading={submittingCourseId === course.id}
+                      onPress={() => handleRegisterAvailableCourse(course.id)}
+                      style={styles.registerButton}
+                    >
+                      {course.sudah_terdaftar ? "Sudah Terdaftar" : "Daftar"}
+                    </Button>
                   </Card.Content>
                 </Card>
-              </Pressable>
-            ))}
-          </View>
+              ))
+            )}
+          </>
         )}
       </ScrollView>
 
-      <AnimatedFAB
-        icon="plus"
-        label="Tambah Kelas"
-        extended={isExtended}
-        onPress={showModal}
-        visible
-        animateFrom="right"
-        iconMode="dynamic"
-        style={[styles.fabStyle, { backgroundColor: theme.colors.primary }]}
-        color="white"
-      />
+      {/* Tombol tambah kelas lama pakai kode akses. Disimpan sementara untuk rollback.
+      <AnimatedFAB ... />
+      */}
 
-      <Modal
-        visible={modalVisible}
-        onDismiss={hideModal}
-        contentContainerStyle={[styles.modal, { backgroundColor: theme.colors.surface }]}
-      >
-        <Text variant="titleMedium" style={styles.modalTitle}>
-          Tambah Matakuliah
-        </Text>
-        <Text variant="bodySmall" style={styles.modalSubtitle}>
-          Masukkan kode akses dari dosen pengampu.
-        </Text>
-        <TextInput
-          mode="outlined"
-          label="Kode Akses"
-          placeholder="Contoh: IFKOM-2026-A"
-          value={accessCode}
-          onChangeText={setAccessCode}
-          autoCapitalize="characters"
-          style={styles.input}
-        />
-        <HelperText type="info" visible>
-          Kode akses dapat diperoleh dari dosen pengampu matakuliah.
-        </HelperText>
-        <View style={styles.modalActions}>
-          <Button mode="text" onPress={hideModal}>
-            Batal
-          </Button>
-          <Button
-            icon="plus"
-            mode="contained"
-            onPress={handleAddCourse}
-            loading={submitting}
-            disabled={submitting}
-          >
-            Tambah
-          </Button>
-        </View>
-      </Modal>
+      {/* Modal tambah kelas lama pakai kode akses. Disimpan sementara untuk rollback.
+      <Modal ...>...</Modal>
+      */}
 
       <Snackbar
         visible={snackbarVisible}
@@ -241,7 +295,7 @@ export default function Matakuliah() {
       >
         {snackbarMessage}
       </Snackbar>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -250,28 +304,28 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F6F8FC",
   },
+  tabBar: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E0E0E0",
+  },
+  tabItem: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  tabLabel: {
+    fontSize: 14,
+  },
   content: {
-    paddingLeft: 16,
-    paddingRight: 16,
+    padding: 16,
     paddingBottom: 100,
   },
-  infoCard: {
-    borderRadius: 16,
-    marginBottom: 14,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontWeight: "700",
-  },
-  sectionHint: {
+  sectionHintRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
+    marginBottom: 10,
   },
   stateCard: {
     backgroundColor: "white",
@@ -291,6 +345,25 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderRadius: 12,
     backgroundColor: "white",
+  },
+  availableCourseCard: {
+    marginBottom: 10,
+    borderRadius: 12,
+    backgroundColor: "white",
+  },
+  availableCourseTitle: {
+    fontWeight: "700",
+    marginBottom: 6,
+  },
+  scheduleList: {
+    marginTop: 8,
+    gap: 4,
+  },
+  scheduleText: {
+    color: "#555",
+  },
+  registerButton: {
+    marginTop: 12,
   },
   fabStyle: {
     bottom: 16,
