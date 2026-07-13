@@ -1,10 +1,21 @@
 import Feather from "@expo/vector-icons/Feather";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router, Tabs } from "expo-router";
+import { useEffect, useState } from "react";
 import { useTheme } from "react-native-paper";
+import { getUserData } from "@/lib/auth-context";
 
 export default function DosenLayout() {
   const theme = useTheme();
+  const [isKaprodi, setIsKaprodi] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const userData = await getUserData();
+      setIsKaprodi(!!userData?.is_kaprodi);
+    })();
+  }, []);
+
   return (
     <Tabs
       screenOptions={{
@@ -47,6 +58,17 @@ export default function DosenLayout() {
           // ),
           tabBarIcon: ({ color }) => (
             <MaterialIcons name="class" size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="kaprodi"
+        options={{
+          title: "Kaprodi",
+          headerShown: false,
+          href: isKaprodi ? undefined : null,
+          tabBarIcon: ({ color }) => (
+            <MaterialIcons name="admin-panel-settings" size={24} color={color} />
           ),
         }}
       />
