@@ -49,17 +49,23 @@ export default function AbsensiAktif() {
     setModalVisible(true);
   };
 
-  const handleSubmitHadir = async (latitude: number, longitude: number) => {
+  const handleSubmitHadir = async (
+    otpCode: string,
+    latitude: number,
+    longitude: number
+  ) => {
     if (!selectedSesiId) return;
 
     try {
       const result = await submitHadirHandler(
         selectedSesiId,
+        otpCode,
         latitude,
         longitude
       );
       console.log("Request payload:", {
         sesiId: selectedSesiId,
+        otpCode,
         latitude,
         longitude,
       });

@@ -2,13 +2,20 @@ import Feather from "@expo/vector-icons/Feather";
 import * as Location from "expo-location";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, StyleSheet, View } from "react-native";
-import { Button, Modal, Portal, Text, useTheme } from "react-native-paper";
+import {
+  Button,
+  Modal,
+  Portal,
+  Text,
+  TextInput,
+  useTheme,
+} from "react-native-paper";
 import { WebView } from "react-native-webview";
 
 interface AbsensiMapModalProps {
   visible: boolean;
   onDismiss: () => void;
-  onSubmit: (latitude: number, longitude: number) => void;
+  onSubmit: (otpCode: string, latitude: number, longitude: number) => void;
   title: string;
 }
 
@@ -25,6 +32,7 @@ export default function AbsensiMapModal({
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [otpCode, setOtpCode] = useState("");
 
   useEffect(() => {
     if (visible) {
@@ -66,11 +74,15 @@ export default function AbsensiMapModal({
   };
 
   const handleSubmit = () => {
-    if (location) {
-      onSubmit(location.latitude, location.longitude);
-    } else {
-      Alert.alert("Error", "Lokasi belum tersedia");
+    if (otpCode.length !== 4) {
+      Alert.alert("Error", "Masukkan kode OTP 4 digit");
+      return;
     }
+    if (!location) {
+      Alert.alert("Error", "Lokasi belum tersedia");
+      return;
+    }
+    onSubmit(otpCode, location.latitude, location.longitude);
   };
 
   const getMapHtml = (lat: number, lon: number) => `
@@ -123,6 +135,17 @@ export default function AbsensiMapModal({
           </Text>
         </View>
 
+        <TextInput
+          label="Kode OTP dari Dosen"
+          value={otpCode}
+          onChangeText={setOtpCode}
+          keyboardType="number-pad"
+          maxLength={4}
+          mode="outlined"
+          placeholder="0000"
+          style={styles.otpInput}
+        />
+
         <View style={styles.mapContainer}>
           {loading ? (
             <View style={styles.loadingContainer}>
@@ -153,7 +176,7 @@ export default function AbsensiMapModal({
           <Button
             mode="contained"
             onPress={handleSubmit}
-            disabled={!location || loading}
+            disabled={!location || loading || otpCode.length !== 4}
             labelStyle={styles.buttonLabel}
             icon={() => <Feather name="map-pin" size={20} color="white" />}
           >
@@ -179,6 +202,10 @@ const styles = StyleSheet.create({
   },
   title: {
     fontWeight: "bold",
+  },
+  otpInput: {
+    marginHorizontal: 16,
+    marginTop: 16,
   },
   mapContainer: {
     height: 400,

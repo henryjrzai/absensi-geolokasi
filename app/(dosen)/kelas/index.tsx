@@ -150,6 +150,8 @@ export default function Kelas() {
                     ruangan={classItem.ruangan.nama_ruangan}
                     kodeKelas={classItem.kelas.kode_kelas}
                     jam={classItem.jam.kode_jam}
+                    otpCode={classItem.otp_code}
+                    statusAbsensi={classItem.status_absensi}
                   />
                 </Card.Content>
               </Card>

@@ -15,12 +15,14 @@ export async function getRiwayatAbsensiByJadwal(jadwalId: number) {
  * */
 export async function submitHadirHandler(
   sesiId: string,
+  otpCode: string,
   latitude: number,
   longitude: number
 ) {
   try {
     const payload = {
       sesi_kuliah_id: parseInt(sesiId),
+      otp_code: otpCode,
       latitude,
       longitude,
     };

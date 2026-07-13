@@ -291,6 +291,18 @@ export default function RekapAbsensi() {
                     </Text>
                   </View>
 
+                  {/* OTP Badge - tampil hanya jika sesi masih buka */}
+                  {item.status_absensi === "buka" && item.otp_code && (
+                    <View style={styles.otpBadge}>
+                      <Text variant="labelSmall" style={styles.otpLabel}>
+                        KODE OTP
+                      </Text>
+                      <Text variant="headlineSmall" style={styles.otpValue}>
+                        {item.otp_code}
+                      </Text>
+                    </View>
+                  )}
+
                   {/* <View style={styles.statRow}>
                     <Text style={styles.statItem}>Hadir: {item.jumlah_hadir}</Text>
                     <Text style={styles.statItem}>Izin: {item.jumlah_izin}</Text>
@@ -418,6 +430,25 @@ const styles = StyleSheet.create({
   },
   timeText: {
     color: "#6B7280",
+  },
+  otpBadge: {
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: "#FFF3CD",
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: "#FFC107",
+    alignItems: "center",
+  },
+  otpLabel: {
+    color: "#856404",
+    fontWeight: "bold",
+  },
+  otpValue: {
+    color: "#000",
+    fontWeight: "bold",
+    letterSpacing: 8,
+    marginTop: 4,
   },
   statRow: {
     marginTop: 12,
